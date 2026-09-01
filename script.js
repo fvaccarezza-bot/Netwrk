@@ -135,39 +135,42 @@ if (footerLogo && !reduceMotion) {
 // columns and the seamless loop are built automatically from this array.
 const NETWORK_LOGOS = [
   { src: 'images/network-logo/amex.png', alt: 'American Express' },
-  { src: 'images/network-logo/nfl.png', alt: 'NFL' },
-  { src: 'images/network-logo/mlb.png', alt: 'MLB' },
-  { src: 'images/network-logo/nhl.png', alt: 'NHL' },
-  { src: 'images/network-logo/cox-enterprises.png', alt: 'Cox Enterprises' },
-  { src: 'images/network-logo/nba.png', alt: 'NBA' },
+  { src: 'images/network-logo/arizona.png', alt: 'Arizona' },
+  { src: 'images/network-logo/betr.png', alt: 'Betr' },
   { src: 'images/network-logo/caa.png', alt: 'CAA' },
   { src: 'images/network-logo/caesars.png', alt: 'Caesars' },
-  { src: 'images/network-logo/arizona.png', alt: 'Arizona' },
-  { src: 'images/network-logo/alo-yoga.png', alt: 'Alo Yoga' },
-  { src: 'images/network-logo/celsius.png', alt: 'Celsius' },
-  { src: 'images/network-logo/mars.png', alt: 'Mars' },
-  { src: 'images/network-logo/spacex.png', alt: 'SpaceX' },
-  { src: 'images/network-logo/toast.png', alt: 'Toast' },
-  { src: 'images/network-logo/jersey-mikes.png', alt: "Jersey Mike's Subs" },
-  { src: 'images/network-logo/walmart.png', alt: 'Walmart' },
-  { src: 'images/network-logo/ufc.png', alt: 'UFC' },
-  { src: 'images/network-logo/mikes-hot-honey.png', alt: "Mike's Hot Honey" },
-  { src: 'images/network-logo/douglas-elliman.png', alt: 'Douglas Elliman' },
-  { src: 'images/network-logo/houlihan-lokey.png', alt: 'Houlihan Lokey' },
+  { src: 'images/network-logo/cox.png', alt: 'Cox Enterprises' },
+  { src: 'images/network-logo/douglas.png', alt: 'Douglas Elliman' },
+  { src: 'images/network-logo/fanatics.png', alt: 'Fanatics' },
+  { src: 'images/network-logo/fisker.png', alt: 'Fisker' },
+  { src: 'images/network-logo/goldenhipo.png', alt: 'Golden Hippo' },
+  { src: 'images/network-logo/green.png', alt: 'Green Mountain Coffee Roasters' },
+  { src: 'images/network-logo/groot.png', alt: 'Groot Hospitality' },
+  { src: 'images/network-logo/houlihan.png', alt: 'Houlihan Lokey' },
+  { src: 'images/network-logo/hwood.png', alt: 'The h.wood Group' },
   { src: 'images/network-logo/keurig.png', alt: 'Keurig' },
-  { src: 'images/network-logo/green-mountain-coffee.png', alt: 'Green Mountain Coffee Roasters' },
   { src: 'images/network-logo/live-nation.png', alt: 'Live Nation' },
-  { src: 'images/network-logo/golden-hippo.png', alt: 'Golden Hippo' },
-  { src: 'images/network-logo/groot-hospitality.png', alt: 'Groot Hospitality' },
+  { src: 'images/network-logo/mlb.png', alt: 'MLB' },
+  { src: 'images/network-logo/nba.png', alt: 'NBA' },
+  { src: 'images/network-logo/nfl.png', alt: 'NFL' },
+  { src: 'images/network-logo/nhl.png', alt: 'NHL' },
+  { src: 'images/network-logo/bausch.png', alt: 'Bausch + Lomb' },
+  { src: 'images/network-logo/liv.png', alt: 'LIV Golf' },
+  { src: 'images/network-logo/nksfb.png', alt: 'NKSFB' },
+  { src: 'images/network-logo/pnc.png', alt: 'PNC' },
+  { src: 'images/network-logo/prime.png', alt: 'PRIME' },
+  { src: 'images/network-logo/ripple.png', alt: 'Ripple' },
+  { src: 'images/network-logo/rolling.png', alt: 'Rolling Loud' },
+  { src: 'images/network-logo/skechers.png', alt: 'Skechers' },
+  { src: 'images/network-logo/uta.png', alt: 'UTA' },
 ];
 
 (() => {
   const marqueeEl = document.querySelector('[data-network-marquee]');
   if (!marqueeEl || !NETWORK_LOGOS.length) return;
 
-  const COLS = 5;
-  const ITEMS_PER_COL = 8;
-  const BASE_SPEEDS = [14, 18, 15, 20, 16]; // px/sec, ambient pace
+  const COLS = 4;
+  const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, ambient pace
   const HOVER_MULTIPLIER = 4;
 
   // Split logos into COLS non-overlapping groups (round-robin) so the same
@@ -184,10 +187,13 @@ const NETWORK_LOGOS = [
     const track = document.createElement('div');
     track.className = 'marquee-track';
 
-    // Fill the column by cycling its own (exclusive) group of logos, then
-    // repeat the whole sequence once more for a seamless loop.
+    // Each column's own sequence is exactly its group's logos, in order —
+    // no wrapping/repeating within a single pass — then that sequence is
+    // repeated once more back-to-back for the seamless scroll loop. As
+    // long as a group has more items than fit in the visible height, the
+    // same logo is never on screen twice at once.
     const group = groups[c].length ? groups[c] : NETWORK_LOGOS;
-    const sequence = Array.from({ length: ITEMS_PER_COL }, (_, i) => group[i % group.length]);
+    const sequence = group;
 
     [...sequence, ...sequence].forEach(logo => {
       const item = document.createElement('span');
@@ -250,10 +256,11 @@ const NETWORK_LOGOS = [
 
   const HEIGHT_START = 0;
   const HEIGHT_END = 780;
-  const COPY_SHIFT = 90; // the text block's own parallax move
+  const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 
   if (reduceMotion) {
     marqueeEl.style.height = `${HEIGHT_END}px`;
+    if (copyEl) { copyEl.style.opacity = '1'; copyEl.style.filter = 'none'; }
     return;
   }
 
@@ -274,7 +281,18 @@ const NETWORK_LOGOS = [
     marqueeEl.style.opacity = String(eased);
     const marqueeBlur = (1 - eased) * 14;
     marqueeEl.style.filter = marqueeBlur > 0.5 ? `blur(${marqueeBlur}px)` : 'none';
-    if (copyEl) copyEl.style.transform = `translateY(${-eased * COPY_SHIFT}px)`;
+    if (copyEl) {
+      // Fades/sharpens in well ahead of the marquee — fully in by a third
+      // of the way through, so it's visible before the logos even start.
+      const copyIn = Math.min(eased / 0.35, 1);
+      copyEl.style.opacity = String(copyIn);
+      const copyBlur = (1 - copyIn) * 14;
+      copyEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
+      // Starts higher up and moves down at one constant rate for the
+      // entire scroll — same span as the logo growth on its right, no
+      // phase change partway through.
+      copyEl.style.transform = `translateY(${-(1 - eased) * COPY_DROP}px)`;
+    }
     ticking = false;
   };
 
@@ -523,48 +541,84 @@ if (aboutSection && aboutWords.length) {
 const statsSection = document.querySelector('.stats');
 const statEls = document.querySelectorAll('.stat');
 const STATS_ENTRY_END = 0.72; // fraction of the pin's scroll spent on the build-up; the rest is the exit
-const STATS_COUNT_START = 0.92; // counters start here and ease up to target — narrow range, few numbers shown
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
 if (statsSection && statEls.length) {
-  // Numbers with a data-count target ease up to it, like a gauge needle
-  // settling — quick at first, then slowing down as it approaches the
-  // final value. No randomness, no jumping around.
+  // Builds a real per-digit odometer: each digit gets its own vertical
+  // reel (0 through the target digit), commas/prefix/suffix stay static
+  // text. Returns the digit reels in right-to-left order, since that's
+  // the order their roll speed is set in (rightmost fastest).
+  const buildOdometer = (wrapEl, target, prefix, suffix) => {
+    wrapEl.textContent = '';
+    // Regular spaces can get collapsed away when the text node sits right
+    // against an anonymous flex item (the digit spans) — use a
+    // non-breaking space so "1 of 10" doesn't lose the gap before "10".
+    if (prefix) wrapEl.appendChild(document.createTextNode(prefix.replace(/ /g, ' ')));
+
+    const digits = [];
+    target.toLocaleString('en-US').split('').forEach(ch => {
+      if (ch < '0' || ch > '9') {
+        wrapEl.appendChild(document.createTextNode(ch)); // comma etc.
+        return;
+      }
+      const digitEl = document.createElement('span');
+      digitEl.className = 'stat-digit';
+      const strip = document.createElement('span');
+      strip.className = 'stat-digit-strip';
+      for (let d = 0; d <= 9; d++) {
+        const cell = document.createElement('span');
+        cell.className = 'stat-digit-cell';
+        cell.textContent = String(d);
+        strip.appendChild(cell);
+      }
+      // Start just a few steps before the target (wrapping around 0-9)
+      // instead of always from 0 — a short, consistent roll no matter
+      // the digit, instead of a long spin for anything close to 0.
+      const startDigit = ((Number(ch) - 3) % 10 + 10) % 10;
+      strip.style.transform = `translateY(-${startDigit * 10}%)`;
+      digitEl.appendChild(strip);
+      digitEl.dataset.target = ch;
+      wrapEl.appendChild(digitEl);
+      digits.push(digitEl);
+    });
+
+    if (suffix) wrapEl.appendChild(document.createTextNode(suffix));
+    return digits.reverse(); // right-to-left
+  };
+
+  // Rolls every digit reel to its target at once, but the rightmost
+  // (fastest, shortest duration) settles first and each one further left
+  // takes progressively longer — same feel as a mechanical counter.
+  const rollOdometer = (digitsRightToLeft) => {
+    digitsRightToLeft.forEach((digitEl, i) => {
+      const strip = digitEl.querySelector('.stat-digit-strip');
+      const target = Number(digitEl.dataset.target);
+      const duration = 0.55 + i * 0.3;
+      strip.style.transition = `transform ${duration}s cubic-bezier(.16,1,.3,1)`;
+      strip.style.transform = `translateY(-${target * 10}%)`;
+    });
+  };
+
   const statCounts = Array.from(statEls).map(el => {
     const numEl = el.querySelector('.stat-number');
     const target = numEl && numEl.dataset.count ? Number(numEl.dataset.count) : null;
-    return {
-      numEl, target,
-      prefix: (numEl && numEl.dataset.prefix) || '',
-      suffix: (numEl && numEl.dataset.suffix) || '',
-      lastVal: null,
-      lastStepTime: 0,
-    };
+    const digits = target != null
+      ? buildOdometer(numEl, target, numEl.dataset.prefix || '', numEl.dataset.suffix || '')
+      : null;
+    return { digits, rolled: false };
   });
 
-  // Advances the number in visible steps rather than a smooth continuous
-  // change — each step pops up from below, like it's pushing the previous
-  // value out of the way, instead of the digits just swapping in place.
-  const stepNumberIn = (el, text) => {
-    el.style.transition = 'none';
-    el.style.transform = 'translateY(16px)';
-    el.style.opacity = '0.2';
-    el.textContent = text;
-    void el.offsetHeight; // force reflow so the transition below actually runs
-    el.style.transition = 'transform .3s cubic-bezier(.16,1,.3,1), opacity .3s cubic-bezier(.16,1,.3,1)';
-    el.style.transform = 'translateY(0)';
-    el.style.opacity = '1';
-  };
-
   if (reduceMotion) {
+    // Show the final digits straight away, no rolling.
+    statCounts.forEach(count => {
+      if (count.digits) count.digits.forEach(d => {
+        d.querySelector('.stat-digit-strip').style.transform = `translateY(-${Number(d.dataset.target) * 10}%)`;
+      });
+    });
     statEls.forEach(el => { el.style.opacity = '1'; });
   } else {
     const total = statEls.length;
-    // Runs on its own fixed clock once a stat starts entering — reaches
-    // the target quickly, the easing is what makes it feel slow.
-    const COUNT_RATE = 0.005; // per frame; ~3.3s to finish at 60fps
-    const countProgress = Array.from(statEls, () => 0);
 
     const updateStats = () => {
       const scrollable = statsSection.offsetHeight - window.innerHeight;
@@ -585,22 +639,9 @@ if (statsSection && statEls.length) {
         const enterOffset = 70 * (1 - p);
 
         const count = statCounts[i];
-        if (count.target != null) {
-          if (local > 0 && countProgress[i] < 1) {
-            countProgress[i] = Math.min(countProgress[i] + COUNT_RATE, 1);
-          }
-          // Ease-out: fast at first, slows way down right before landing —
-          // the "gauge needle settling" feel, no linear ticking.
-          const eased = 1 - Math.pow(1 - countProgress[i], 5);
-          const startVal = count.target * STATS_COUNT_START;
-          const val = Math.round(startVal + (count.target - startVal) * eased);
-
-          const now = performance.now();
-          if (val !== count.lastVal && now - count.lastStepTime > 160) {
-            count.lastVal = val;
-            count.lastStepTime = now;
-            stepNumberIn(count.numEl, `${count.prefix}${val.toLocaleString('en-US')}${count.suffix}`);
-          }
+        if (count.digits && local > 0 && !count.rolled) {
+          count.rolled = true;
+          rollOdometer(count.digits);
         }
 
         const entryBlur = 16 * (1 - p); // blurred coming in, same as the exit treatment
