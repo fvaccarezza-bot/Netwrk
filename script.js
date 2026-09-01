@@ -1,4 +1,8 @@
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Ease-in-out for 0-1 progress ramps, so reveals/holds settle in and out
+// instead of hitting their start/end point at full speed (a linear ramp
+// looks like it gets cut off right at the boundary).
+const smoothstep = (x) => x * x * (3 - 2 * x);
 
 // Custom cursor: small dot + a ring that trails with a delay, grows on
 // interactive elements. Skipped on touch/coarse-pointer devices.
@@ -23,7 +27,7 @@ if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     dot.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
   });
 
-  const HOVER_SELECTOR = 'a, button, .card, .network-logo, input, textarea, [role="button"]';
+  const HOVER_SELECTOR = 'a, button, .card, .network-logo, .network-marquee, input, textarea, [role="button"]';
   document.addEventListener('mouseover', (e) => {
     if (e.target.closest(HOVER_SELECTOR)) ring.classList.add('is-hover');
   });
@@ -119,16 +123,34 @@ const footerLogo = document.querySelector('[data-reveal]');
 if (footerLogo && !reduceMotion) {
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.intersectionRatio >= 0.85) {
+      if (entry.intersectionRatio >= 0.5) {
         footerLogo.classList.add('is-revealed');
         io.disconnect();
       }
     });
-  }, { threshold: [0.85] });
+  }, { threshold: [0.5] });
   io.observe(footerLogo);
 } else if (footerLogo) {
   footerLogo.classList.add('is-revealed');
 }
+
+// Network closing line + subcopy: simple one-time reveal now that they live
+// in normal flow after the pin (not tied to its scroll progress anymore).
+document.querySelectorAll('.network-lead-after, .network-subcopy').forEach(el => {
+  if (reduceMotion) {
+    el.classList.add('is-visible');
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        el.classList.add('is-visible');
+        io.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+  io.observe(el);
+});
 
 // Network: vertical auto-scrolling logo marquee, faded top/bottom.
 // Just add/replace entries here (paste the full list when it's ready) —
@@ -169,9 +191,11 @@ const NETWORK_LOGOS = [
   const marqueeEl = document.querySelector('[data-network-marquee]');
   if (!marqueeEl || !NETWORK_LOGOS.length) return;
 
-  const COLS = 4;
-  const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, ambient pace
-  const HOVER_MULTIPLIER = 4;
+  const isRetinaBand = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
+  const COLS = isRetinaBand ? 9 : 4;
+  const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, base pace
+  const IDLE_MULTIPLIER = 4; // fast while not hovering
+  const HOVER_MULTIPLIER = 1; // slows down to the base pace on hover
 
   // Split logos into COLS non-overlapping groups (round-robin) so the same
   // brand never shows up in two columns at once.
@@ -192,7 +216,15 @@ const NETWORK_LOGOS = [
     // repeated once more back-to-back for the seamless scroll loop. As
     // long as a group has more items than fit in the visible height, the
     // same logo is never on screen twice at once.
-    const group = groups[c].length ? groups[c] : NETWORK_LOGOS;
+    let group = groups[c].length ? groups[c] : NETWORK_LOGOS;
+    // Pad short groups by repeating their own logos — a temporary stopgap
+    // so every column has at least 5 rows worth of track to loop through.
+    const MIN_PER_COLUMN = 5;
+    if (group.length < MIN_PER_COLUMN) {
+      const padded = [];
+      for (let i = 0; i < MIN_PER_COLUMN; i++) padded.push(group[i % group.length]);
+      group = padded;
+    }
     const sequence = group;
 
     [...sequence, ...sequence].forEach(logo => {
@@ -213,6 +245,21 @@ const NETWORK_LOGOS = [
     tracks.push({ el: track, pos: 0, dir: c % 2 ? -1 : 1, base, speed: base });
   }
 
+  // Floating "View All" label that trails the cursor while hovering the
+  // logo grid — purely decorative (pointer-events:none) so it never steals
+  // the hover/click that the grid itself now handles as the click target.
+  const marqueeCta = document.createElement('div');
+  marqueeCta.className = 'marquee-cta';
+  marqueeCta.innerHTML = '<span>View</span><span>All +</span>';
+  document.body.appendChild(marqueeCta);
+
+  marqueeEl.addEventListener('mousemove', (e) => {
+    marqueeCta.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+  });
+  marqueeEl.addEventListener('mouseenter', () => { marqueeCta.classList.add('is-visible'); });
+  marqueeEl.addEventListener('mouseleave', () => { marqueeCta.classList.remove('is-visible'); });
+  marqueeEl.addEventListener('click', () => { window.location.href = 'network-partners.html'; });
+
   if (reduceMotion) return;
 
   // Driven by JS (not a CSS animation) so speed can ease smoothly toward a
@@ -230,12 +277,16 @@ const NETWORK_LOGOS = [
 
     tracks.forEach(t => {
       const half = t.el.scrollHeight / 2 || 1;
-      const target = t.base * (hovering ? HOVER_MULTIPLIER : 1);
+      const target = t.base * (hovering ? HOVER_MULTIPLIER : IDLE_MULTIPLIER);
       t.speed += (target - t.speed) * 0.03;
 
       t.pos -= t.dir * t.speed * dt;
-      if (t.dir > 0 && t.pos <= -half) t.pos += half;
-      if (t.dir < 0 && t.pos >= 0) t.pos -= half;
+      // Modulo wrap (not a single conditional +=/-= half) so a slow frame
+      // that overshoots by more than one cycle still lands in range instead
+      // of visibly skipping — this is what showed up as jumps on some
+      // columns (their groups have fewer logos, so `half` is smaller and a
+      // big frame gap was more likely to overshoot it).
+      t.pos = ((t.pos % half) + half) % half - half;
 
       t.el.style.transform = `translateY(${t.pos}px)`;
     });
@@ -254,8 +305,16 @@ const NETWORK_LOGOS = [
   const copyEl = document.querySelector('.network-copy');
   if (!networkSection || !marqueeEl) return;
 
-  const HEIGHT_START = 0;
-  const HEIGHT_END = 780;
+  const marqueeIsFullBleed = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
+  // 3 rows tall in the retina band (measured off the actual rendered logo
+  // frame, since its size is fluid there); the original fixed reveal
+  // height everywhere else.
+  const isRetinaBand = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
+  const sampleLogo = document.querySelector('.network-logo');
+  const logoH = sampleLogo ? sampleLogo.getBoundingClientRect().height : 120;
+  const CURTAIN_HEIGHT = isRetinaBand ? logoH : 120; // one row, opened via clip-path so logos never get squashed
+  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
+  const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 
   if (reduceMotion) {
@@ -277,21 +336,33 @@ const NETWORK_LOGOS = [
     // growth and the release happening at the exact same instant.
     const growth = Math.min(progress / 0.85, 1);
     const eased = 1 - Math.pow(1 - growth, 3);
-    marqueeEl.style.height = `${HEIGHT_START + (HEIGHT_END - HEIGHT_START) * eased}px`;
+    // Phase 1: a horizontal curtain opens (clip-path, not scale — the logos
+    // stay full size, never squashed) over the first row's fixed height.
+    // Phase 2: once that curtain is fully open, height takes over and
+    // extends the block downward to reveal the remaining rows.
+    const curtainProgress = Math.min(eased / CURTAIN_END, 1);
+    const growProgress = Math.max((eased - CURTAIN_END) / (1 - CURTAIN_END), 0);
+    const currentHeight = CURTAIN_HEIGHT + (HEIGHT_END - CURTAIN_HEIGHT) * growProgress;
+    marqueeEl.style.height = `${currentHeight}px`;
+    const curtainInset = 50 * (1 - curtainProgress);
+    marqueeEl.style.clipPath = `inset(${curtainInset}% 0 ${curtainInset}% 0)`;
+    marqueeEl.style.transform = marqueeIsFullBleed ? 'translateX(-50%)' : 'none';
     marqueeEl.style.opacity = String(eased);
     const marqueeBlur = (1 - eased) * 14;
     marqueeEl.style.filter = marqueeBlur > 0.5 ? `blur(${marqueeBlur}px)` : 'none';
     if (copyEl) {
-      // Fades/sharpens in well ahead of the marquee — fully in by a third
-      // of the way through, so it's visible before the logos even start.
-      const copyIn = Math.min(eased / 0.35, 1);
+      // Reveals entirely BEFORE the pin engages — driven by the section's
+      // normal scroll-into-view position, not the pinned progress — so by
+      // the time the pin actually sticks, the text is already settled and
+      // the pinned scroll is free to belong to the logo curtain/growth.
+      const preRect = networkSection.getBoundingClientRect();
+      const preProgress = Math.min(Math.max(1 - preRect.top / window.innerHeight, 0), 1);
+      const copyIn = smoothstep(Math.min(preProgress / 0.8, 1));
       copyEl.style.opacity = String(copyIn);
       const copyBlur = (1 - copyIn) * 14;
       copyEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
-      // Starts higher up and moves down at one constant rate for the
-      // entire scroll — same span as the logo growth on its right, no
-      // phase change partway through.
-      copyEl.style.transform = `translateY(${-(1 - eased) * COPY_DROP}px)`;
+      // Starts lower and rises into place as it reveals.
+      copyEl.style.transform = `translateY(${(1 - copyIn) * COPY_DROP}px)`;
     }
     ticking = false;
   };
@@ -317,7 +388,7 @@ const NETWORK_LOGOS = [
   const LINK_DIST = 260;
   const CURSOR_LINK_DIST = 240;
   const CURSOR_PULL_DIST = 300;
-  const PARALLAX_SPEED = 0.4; // background moves at 40% of scroll speed
+  const PARALLAX_SPEED = 0.15; // background moves at 15% of scroll speed (more visible drift)
 
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
   let nodes = [];
@@ -415,6 +486,12 @@ const NETWORK_LOGOS = [
 
   const step = () => {
     canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
+    // Fades and blurs out over the first viewport height of scroll, so the
+    // node field dissolves away as it parallax-scrolls out of the hero
+    // instead of just sliding off with a hard edge.
+    const heroFadeProgress = Math.min(window.scrollY / window.innerHeight, 1);
+    canvas.style.opacity = String(1 - heroFadeProgress);
+    canvas.style.filter = heroFadeProgress > 0 ? `blur(${heroFadeProgress * 16}px)` : 'none';
     ctx.clearRect(0, 0, w, h);
 
     if (mouse.active) {
@@ -540,7 +617,8 @@ if (aboutSection && aboutWords.length) {
 // a slightly different rate for the parallax feel).
 const statsSection = document.querySelector('.stats');
 const statEls = document.querySelectorAll('.stat');
-const STATS_ENTRY_END = 0.72; // fraction of the pin's scroll spent on the build-up; the rest is the exit
+const STATS_ENTRY_END = 0.6; // fraction of the pin's scroll spent on the build-up
+const STATS_EXIT_START = 0.8; // all 3 stay fully visible until this fraction, then fade out
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
@@ -617,8 +695,11 @@ if (statsSection && statEls.length) {
       });
     });
     statEls.forEach(el => { el.style.opacity = '1'; });
+    const titleElReduced = document.querySelector('.stats-title');
+    if (titleElReduced) titleElReduced.style.opacity = '1';
   } else {
     const total = statEls.length;
+    const titleEl = document.querySelector('.stats-title');
 
     const updateStats = () => {
       const scrollable = statsSection.offsetHeight - window.innerHeight;
@@ -627,8 +708,19 @@ if (statsSection && statEls.length) {
         : 0;
       statsProgress = progress;
 
+      if (titleEl) {
+        // Reveals over the first bit of the pin, blurred and drifting down
+        // into place, then drifts/blurs back out with the rest on exit.
+        const titleIn = smoothstep(Math.min(progress / 0.15, 1));
+        const titleExit = smoothstep(Math.max((progress - STATS_EXIT_START) / (1 - STATS_EXIT_START), 0));
+        const titleBlur = Math.max(16 * (1 - titleIn), titleExit * 16);
+        titleEl.style.opacity = String(titleIn * (1 - titleExit));
+        titleEl.style.filter = titleBlur > 0.5 ? `blur(${titleBlur}px)` : 'none';
+        titleEl.style.transform = `translateX(-50%) translateY(${(1 - titleIn) * -24 - titleExit * 30}px)`;
+      }
+
       const entryProgress = Math.min(progress / STATS_ENTRY_END, 1);
-      const exitProgress = Math.max((progress - STATS_ENTRY_END) / (1 - STATS_ENTRY_END), 0);
+      const exitProgress = Math.max((progress - STATS_EXIT_START) / (1 - STATS_EXIT_START), 0);
       statsExitProgress = exitProgress;
       const scaled = entryProgress * total;
 
@@ -672,13 +764,19 @@ if (statsSection && statEls.length) {
 // setting transform wholesale would otherwise wipe the CSS centering out.
 (() => {
   const canvas = document.querySelector('.stats-nodes');
-  if (!canvas) return;
+  const statsPinEl = document.querySelector('.stats-pin');
+  if (!canvas || !statsPinEl) return;
 
   const ctx = canvas.getContext('2d');
   const NODE_COUNT = 42;
   const LINK_DIST = 240;
+  // Same reach as the hero's node field's hover interaction.
+  const CURSOR_LINK_DIST = 240;
+  const CURSOR_PULL_DIST = 300;
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
   let nodes = [];
+  const mouse = { x: -9999, y: -9999, active: false };
+  const cursorNode = { x: -9999, y: -9999 };
 
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
@@ -731,9 +829,19 @@ if (statsSection && statEls.length) {
 
   const drawNodes = () => {
     nodes.forEach(n => {
+      let size = n.size;
+      let alpha = 0.85;
+      if (mouse.active) {
+        const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+        if (dist < CURSOR_LINK_DIST) {
+          const boost = 1 - dist / CURSOR_LINK_DIST;
+          size += boost * 1.5;
+          alpha = Math.min(1, alpha + boost * 0.3);
+        }
+      }
       ctx.beginPath();
-      ctx.arc(n.x, n.y, n.size, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       ctx.fill();
     });
   };
@@ -760,6 +868,11 @@ if (statsSection && statEls.length) {
   const draw = () => {
     ctx.clearRect(0, 0, w, h);
 
+    if (mouse.active) {
+      cursorNode.x += (mouse.x - cursorNode.x) * 0.14;
+      cursorNode.y += (mouse.y - cursorNode.y) * 0.14;
+    }
+
     nodes.forEach(n => {
       // Spring pull back toward home — a self-contained loop/orbit, same
       // as the hero, so the mesh never drifts out of shape.
@@ -769,25 +882,66 @@ if (statsSection && statEls.length) {
       n.vy *= 0.999;
       n.x += n.vx;
       n.y += n.vy;
+
+      if (mouse.active) {
+        const dx = mouse.x - n.x, dy = mouse.y - n.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < CURSOR_PULL_DIST && dist > 1) {
+          n.x += (dx / dist) * 0.7;
+          n.y += (dy / dist) * 0.7;
+        }
+      }
     });
 
     drawLinks();
+
+    if (mouse.active) {
+      nodes.forEach(n => {
+        const dist = Math.hypot(cursorNode.x - n.x, cursorNode.y - n.y);
+        if (dist < CURSOR_LINK_DIST) {
+          ctx.strokeStyle = `rgba(255,255,255,${0.6 * (1 - dist / CURSOR_LINK_DIST)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(cursorNode.x, cursorNode.y);
+          ctx.lineTo(n.x, n.y);
+          ctx.stroke();
+        }
+      });
+    }
+
     drawNodes();
 
-    // Starts off-center and settles into the true viewport center exactly
-    // as the last stat finishes entering, then gets an extra push once the
-    // stats start leaving. The fade runs on its own, faster rate — it
-    // finishes disappearing before the movement itself is done.
-    const entryPhase = Math.min(statsProgress / STATS_ENTRY_END, 1);
-    const parallaxY = (1 - entryPhase) * 140 + statsExitProgress * -180;
-    const entryFactor = Math.min(statsProgress / 0.15, 1); // fades/sharpens in over the pin's first 15%
-    const fadeOpacity = 0.7 * entryFactor * (1 - Math.min(statsExitProgress * 1.6, 1));
+    if (mouse.active) {
+      ctx.beginPath();
+      ctx.arc(cursorNode.x, cursorNode.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.95)';
+      ctx.fill();
+    }
+
+    // Continuous parallax drift for the whole pin — never pins in place —
+    // that crosses dead center exactly when the third stat finishes
+    // entering, then keeps drifting past it as the section exits.
+    const parallaxY = (STATS_ENTRY_END - statsProgress) * 220;
+    const entryFactor = smoothstep(Math.min(statsProgress / 0.24, 1)); // fades/sharpens in over the pin's first 24%
+    const fadeOpacity = 0.7 * entryFactor * (1 - Math.min(statsExitProgress * 1.1, 1));
     const entryBlur = (1 - entryFactor) * 14;
     canvas.style.opacity = String(fadeOpacity);
     canvas.style.filter = entryBlur > 0.5 ? `blur(${entryBlur}px)` : 'none';
     canvas.style.transform = `translate(-50%,-50%) translateY(${parallaxY}px)`;
     requestAnimationFrame(draw);
   };
+
+  statsPinEl.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    if (!mouse.active) {
+      cursorNode.x = mouse.x;
+      cursorNode.y = mouse.y;
+    }
+    mouse.active = true;
+  });
+  statsPinEl.addEventListener('mouseleave', () => { mouse.active = false; });
 
   requestAnimationFrame(draw);
 })();
