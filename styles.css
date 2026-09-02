@@ -54,7 +54,7 @@ html.lenis,html.lenis body{height:auto}
   padding:clamp(10px, 2px + 0.63vw, 14px) clamp(28px, 4px + 1.88vw, 40px);background:none;pointer-events:none}
 .header a,.header button{pointer-events:auto}
 .logo{display:flex;align-items:center}
-.logo-img{display:block;height:clamp(26px, 16px + 0.78vw, 31px);width:auto}
+.logo-img{display:block;height:clamp(36px, 22px + 1.09vw, 43px);width:auto}
 body{padding-top:var(--header-h)}
 
 /* ---------- Menu toggle ---------- */
@@ -112,6 +112,35 @@ body.menu-open .menu a:hover{opacity:.6}
   font-family:var(--mono);font-size:clamp(12px, 2px + 0.78vw, 17px);line-height:1.6;color:#fff}
 .hero-sub strong{font-weight:400}
 
+/* ---------- Hero: staggered load-in reveal (page load, not scroll) ---------- */
+.hero .eyebrow{opacity:0;filter:blur(14px);transform:translateY(18px);
+  transition:opacity 1s var(--ease),filter 1s var(--ease),transform 1s var(--ease);transition-delay:.15s}
+.hero .h1-bold{opacity:0;filter:blur(18px);transform:translateY(28px);
+  transition:opacity 1.1s var(--ease),filter 1.1s var(--ease),transform 1.1s var(--ease);transition-delay:.32s}
+.hero .h1-light{opacity:0;filter:blur(18px);transform:translateY(28px);
+  transition:opacity 1.1s var(--ease),filter 1.1s var(--ease),transform 1.1s var(--ease);transition-delay:.46s}
+.hero .hero-sub{opacity:0;filter:blur(12px);transform:translateY(18px);
+  transition:opacity 1s var(--ease),filter 1s var(--ease),transform 1s var(--ease);transition-delay:.62s}
+.hero .btn{opacity:0;filter:blur(10px);transform:translateY(14px);
+  /* Delay lives inline per-entry (not via a shared transition-delay) so it
+     only affects the load-in properties — the button's own hover
+     transitions (width/gap/color/border-color, inherited from the base
+     .btn rule below) must be re-listed here too, since this shorthand
+     replaces that rule's entirely rather than merging with it, and stay
+     un-delayed so hover still responds instantly. */
+  transition:opacity .9s var(--ease) .76s,filter .9s var(--ease) .76s,transform .9s var(--ease) .76s,
+    width .5s var(--ease),gap .5s var(--ease),background .5s var(--ease),color .5s var(--ease),border-color .5s var(--ease)}
+body.hero-loaded .hero .eyebrow,
+body.hero-loaded .hero .h1-bold,
+body.hero-loaded .hero .h1-light,
+body.hero-loaded .hero .hero-sub,
+body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
+
+@media (prefers-reduced-motion: reduce){
+  .hero .eyebrow,.hero .h1-bold,.hero .h1-light,.hero .hero-sub,.hero .btn{
+    opacity:1;filter:none;transform:none;transition:none}
+}
+
 /* ---------- Botón ---------- */
 .btn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;margin-top:clamp(32px, 12px + 1.56vw, 42px);
   width:clamp(260px, 140px + 9.38vw, 320px);height:clamp(44px, 36px + 0.63vw, 48px);max-width:100%;
@@ -141,11 +170,12 @@ body.menu-open .menu a:hover{opacity:.6}
 .about-copy .word{opacity:.25;filter:blur(6px)}
 
 /* ---------- Portfolio ---------- */
-.portfolio{padding-top:clamp(96px, -32px + 10vw, 160px);padding-bottom:clamp(96px, -32px + 10vw, 160px)}
+.portfolio{padding-top:clamp(96px, -32px + 10vw, 160px);padding-bottom:clamp(48px, -16px + 5vw, 80px)}
 .section-title{display:flex;align-items:center;justify-content:center;margin-bottom:clamp(28px, -4px + 2.5vw, 44px)}
 .section-title h2{margin:0;font-size:clamp(38px, 14px + 1.88vw, 50px);font-weight:400;letter-spacing:-.02em}
 .portfolio .section-title h2,
-.team .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6}
+.team .section-title h2,
+.co-investors .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;perspective:1600px;
   width:100%;max-width:clamp(944px, -48px + 77.5vw, 1440px);margin:0 auto}
@@ -225,8 +255,33 @@ body.menu-open .menu a:hover{opacity:.6}
   .stat{position:relative;top:auto;left:auto;width:auto;margin:0 auto;opacity:1;transform:none}
 }
 
+/* ---------- Mid-page lead line (between Portfolio and Team): pinned while
+   the two lines fade/blur in staggered, hold, then fade/blur out together —
+   same pin technique as Stats. ---------- */
+.mid-lead{position:relative;height:230vh}
+.mid-lead-pin{position:sticky;top:0;height:100vh;height:100dvh;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mid-lead-pulse{position:absolute;top:50%;left:50%;width:min(1100px,90vw);height:min(1100px,90vw);
+  transform:translate(-50%,-50%);z-index:0;pointer-events:none}
+.mid-lead-text{position:relative;z-index:1;margin:0 auto;max-width:1320px;text-align:center}
+/* Same size as "These aren't logos. / They're phone numbers." — weights
+   reversed: light line first, bold line second. Each sentence is short
+   enough at this size to stay on its own single line. */
+.mid-lead-light,.mid-lead-bold{display:block;font-family:var(--sans);
+  font-size:clamp(38px, 2px + 2.81vw, 56px);letter-spacing:-.02em;line-height:1.15;
+  opacity:0;will-change:opacity,filter,transform}
+.mid-lead-light{font-weight:300;color:#eaeaea}
+.mid-lead-bold{font-weight:800;color:var(--fg);margin-top:10px}
+
+@media (prefers-reduced-motion: reduce){
+  .mid-lead{height:auto}
+  .mid-lead-pin{position:relative;height:auto;padding:120px 24px}
+  .mid-lead-light,.mid-lead-bold{opacity:1;filter:none;transform:none}
+  .mid-lead-pulse{display:none}
+}
+
 /* ---------- Team ---------- */
-.team{padding-top:clamp(120px, -40px + 12.5vw, 200px);padding-bottom:clamp(120px, -40px + 12.5vw, 200px)}
+.team{padding-top:clamp(60px, -20px + 6.25vw, 100px);padding-bottom:clamp(120px, -40px + 12.5vw, 200px)}
 .team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(28px, 4px + 1.88vw, 40px);align-items:stretch;perspective:1600px}
 .team-card{position:relative;overflow:hidden;display:flex;align-items:center;gap:28px;text-align:left;min-width:0;
   background:var(--bg-soft);padding:clamp(28px, 4px + 1.88vw, 40px);
@@ -264,6 +319,21 @@ body.menu-open .menu a:hover{opacity:.6}
 .team-role{font-family:var(--mono);font-size:clamp(12px, 4px + 0.63vw, 16px);letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;margin-top:8px}
 .team-bio{font-family:var(--mono);font-size:clamp(12px, 4px + 0.63vw, 16px);line-height:1.7;color:var(--fg-dim);margin:16px 0 0;max-width:480px}
 
+/* ---------- Co-Investors ---------- */
+.co-investors{padding-top:clamp(96px, -32px + 10vw, 160px);padding-bottom:clamp(96px, -32px + 10vw, 160px)}
+.co-investors-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;
+  width:100%;max-width:clamp(944px, -48px + 77.5vw, 1440px);margin:0 auto;
+  opacity:0;filter:blur(14px);transform:translateY(24px);
+  transition:opacity .9s var(--ease),filter .9s var(--ease),transform .9s var(--ease)}
+.co-investors-grid.is-visible{opacity:1;filter:blur(0);transform:translateY(0)}
+.co-investor-card{position:relative;aspect-ratio:15/11;background:var(--bg-soft);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim)}
+
+@media (prefers-reduced-motion: reduce){
+  .co-investors-grid{opacity:1;filter:none;transform:none;transition:none}
+}
+
 /* ---------- Network: pinned while the marquee columns lengthen ---------- */
 .network{position:relative;height:280vh}
 .network-pin{position:sticky;top:0;height:100vh;height:100dvh;display:flex;align-items:center;padding:0;overflow-x:hidden;overflow-y:auto}
@@ -283,6 +353,7 @@ body.menu-open .menu a:hover{opacity:.6}
   transition:opacity .8s var(--ease) .2s,transform .8s var(--ease) .2s}
 .network-subcopy.is-visible{opacity:1;transform:translateY(0)}
 .network-copy .btn{align-self:flex-start;margin-top:0}
+.network-copy-after{display:none}
 
 .network-marquee{position:relative;display:flex;gap:12px;height:0;overflow:hidden;flex-shrink:0}
 .network-marquee::before,.network-marquee::after{content:'';position:absolute;left:0;right:0;height:46%;z-index:2;
@@ -374,6 +445,42 @@ body.menu-open .menu a:hover{opacity:.6}
 /* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
   .num,.cat{font-size:13px}
+  .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
+  .grid{justify-items:center}
+  .card{width:400px;height:500px}
+  .card-logo{transform:scale(1.2)}
+
+  /* Shortens the stats pin's scroll runway (entry/hold/exit are fraction-based
+     in JS, so this just compresses them proportionally), and adds breathing
+     room above it now that stats immediately follows the network/logos
+     section in the page order. */
+  .stats{height:190vh;margin-top:380px}
+
+  /* Network: vertical stack — "Our Network" on top, the marquee (icon
+     curtain-open/grow animation, unchanged) in the middle, headline +
+     subcopy at the bottom — all revealed together within the same pin. */
+  .network-row{flex-direction:column;justify-content:center;align-items:center;gap:48px;text-align:center}
+  .network-copy{width:100%;max-width:100%;align-items:center;order:1}
+  .network-copy .eyebrow{text-align:center}
+  .network-copy .btn{display:none}
+  .network-marquee{order:2}
+  .network-copy-after{display:flex;flex-direction:column;gap:20px;
+    max-width:760px;margin:0 auto;align-items:center;order:3}
+  .network-lead-inline{font-family:var(--sans);font-weight:800;
+    font-size:clamp(38px, 2px + 2.81vw, 56px);line-height:1.15;letter-spacing:-.02em;
+    color:var(--fg);margin:0;text-align:center}
+  .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
+  .network-subcopy-inline{font-family:var(--mono);font-size:18px;line-height:1.7;
+    color:var(--fg-dim);margin:0;text-align:center}
+  .network-after{display:none}
+
+  /* Drop the "View All" floating hover label off the logo marquee */
+  .marquee-cta{display:none}
+
+  /* Stronger bottom mask so the grown grid's lower edge blends into the
+     background instead of cutting off hard against the copy below it. */
+  .network-marquee::after{height:65%;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+    background:linear-gradient(to top,var(--bg) 0%,rgba(5,5,5,.92) 35%,transparent 100%)}
 }
 
 /* ---------- Responsive ---------- */
@@ -381,6 +488,7 @@ body.menu-open .menu a:hover{opacity:.6}
   .wrap{padding:0 24px}
   .grid{grid-template-columns:repeat(2,1fr)}
   .team-grid{grid-template-columns:1fr;gap:60px}
+  .co-investors-grid{grid-template-columns:repeat(3,1fr)}
   .menu{padding:88px 32px 40px}
   .menu a{font-size:44px}
 }
@@ -395,4 +503,5 @@ body.menu-open .menu a:hover{opacity:.6}
   .menu a{font-size:36px}
   .team-grid{gap:24px}
   .team-card{flex-direction:column;text-align:center;padding:32px 24px}
+  .co-investors-grid{grid-template-columns:repeat(2,1fr)}
 }

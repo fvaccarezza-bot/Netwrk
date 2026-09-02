@@ -4,6 +4,14 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 // looks like it gets cut off right at the boundary).
 const smoothstep = (x) => x * x * (3 - 2 * x);
 
+// Hero: staggered load-in reveal (CSS handles the per-element transitions —
+// this just flips the trigger class one frame after the hidden state has
+// actually painted, so the transition is guaranteed to be visible instead
+// of possibly collapsing into the same frame as the initial paint).
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  document.body.classList.add('hero-loaded');
+}));
+
 // Custom cursor: small dot + a ring that trails with a delay, grows on
 // interactive elements. Skipped on touch/coarse-pointer devices.
 if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -134,8 +142,8 @@ if (footerLogo && !reduceMotion) {
   footerLogo.classList.add('is-revealed');
 }
 
-// Network closing line + subcopy: simple one-time reveal now that they live
-// in normal flow after the pin (not tied to its scroll progress anymore).
+// Network closing line + subcopy: simple one-time reveal, not tied to any
+// pin's scroll progress.
 document.querySelectorAll('.network-lead-after, .network-subcopy').forEach(el => {
   if (reduceMotion) {
     el.classList.add('is-visible');
@@ -192,7 +200,8 @@ const NETWORK_LOGOS = [
   if (!marqueeEl || !NETWORK_LOGOS.length) return;
 
   const isRetinaBand = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
-  const COLS = isRetinaBand ? 9 : 4;
+  const isUW = window.matchMedia('(min-width:1920px)').matches;
+  const COLS = isRetinaBand ? 9 : (isUW ? 9 : 4);
   const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, base pace
   const IDLE_MULTIPLIER = 4; // fast while not hovering
   const HOVER_MULTIPLIER = 1; // slows down to the base pace on hover
@@ -303,6 +312,7 @@ const NETWORK_LOGOS = [
   const networkSection = document.querySelector('.network');
   const marqueeEl = document.querySelector('.network-marquee');
   const copyEl = document.querySelector('.network-copy');
+  const copyAfterEl = document.querySelector('.network-copy-after');
   if (!networkSection || !marqueeEl) return;
 
   const marqueeIsFullBleed = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
@@ -310,9 +320,12 @@ const NETWORK_LOGOS = [
   // frame, since its size is fluid there); the original fixed reveal
   // height everywhere else.
   const isRetinaBand = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
+  const isUW = window.matchMedia('(min-width:1920px)').matches;
   const sampleLogo = document.querySelector('.network-logo');
   const logoH = sampleLogo ? sampleLogo.getBoundingClientRect().height : 120;
-  const CURTAIN_HEIGHT = isRetinaBand ? logoH : 120; // one row, opened via clip-path so logos never get squashed
+  // UW: pre-reveal ("closed") sliver is much thinner (16px) so the gap
+  // before the curtain opens doesn't read as dead space.
+  const CURTAIN_HEIGHT = isRetinaBand ? logoH : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
   const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
@@ -320,6 +333,7 @@ const NETWORK_LOGOS = [
   if (reduceMotion) {
     marqueeEl.style.height = `${HEIGHT_END}px`;
     if (copyEl) { copyEl.style.opacity = '1'; copyEl.style.filter = 'none'; }
+    if (copyAfterEl) { copyAfterEl.style.opacity = '1'; copyAfterEl.style.transform = 'none'; }
     return;
   }
 
@@ -363,6 +377,16 @@ const NETWORK_LOGOS = [
       copyEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
       // Starts lower and rises into place as it reveals.
       copyEl.style.transform = `translateY(${(1 - copyIn) * COPY_DROP}px)`;
+
+      // Headline/subcopy (UW: sits below the marquee) reveals in lockstep
+      // with the eyebrow above — both settle before the pin engages, so the
+      // icon curtain/grow animation between them is the only thing driven
+      // by the pinned scroll.
+      if (copyAfterEl) {
+        copyAfterEl.style.opacity = String(copyIn);
+        copyAfterEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
+        copyAfterEl.style.transform = `translateY(${(1 - copyIn) * COPY_DROP}px)`;
+      }
     }
     ticking = false;
   };
@@ -389,8 +413,12 @@ const NETWORK_LOGOS = [
   const CURSOR_LINK_DIST = 240;
   const CURSOR_PULL_DIST = 300;
   const PARALLAX_SPEED = 0.15; // background moves at 15% of scroll speed (more visible drift)
+  const LOAD_IN_MS = 1400; // node field itself fades in on page load, alongside the text
+  const WAVE_SPAN = 1000; // ms for the reveal wave to sweep from center to the furthest node
+  const NODE_FADE = 450; // ms for one node's own fade/grow-in once the wave reaches it
 
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const loadStart = performance.now();
   let nodes = [];
   let raf = null;
   const mouse = { x: -9999, y: -9999, active: false };
@@ -415,6 +443,12 @@ const NETWORK_LOGOS = [
     const cellW = w / cols;
     const cellH = h / rows;
 
+    // UW (>=1920px) renders nodes larger — matches the protected UW baseline
+    // sizing, doesn't touch retina band or mobile.
+    const isUW = window.innerWidth >= 1920;
+    const sizeBase = isUW ? 2.4 : 1.6;
+    const sizeRange = isUW ? 2.6 : 1.8;
+
     nodes = [];
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
@@ -427,9 +461,22 @@ const NETWORK_LOGOS = [
           homeY,
           vx: (Math.random() - 0.5) * 0.35,
           vy: (Math.random() - 0.5) * 0.35,
-          size: 1.6 + Math.random() * 1.8,
+          size: sizeBase + Math.random() * sizeRange,
+          reveal: reduceMotion ? 1 : 0,
         });
       }
+    }
+
+    // Entrance wave: nodes wake up in a ring expanding out from the field's
+    // own center, instead of the whole mesh just fading in flat together.
+    if (!reduceMotion) {
+      const cx = w / 2, cy = h / 2;
+      let maxDist = 1;
+      nodes.forEach(n => {
+        n.dist = Math.hypot(n.homeX - cx, n.homeY - cy);
+        if (n.dist > maxDist) maxDist = n.dist;
+      });
+      nodes.forEach(n => { n.waveDelay = (n.dist / maxDist) * WAVE_SPAN; });
     }
   };
 
@@ -437,9 +484,11 @@ const NETWORK_LOGOS = [
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i], b = nodes[j];
+        const linkReveal = Math.min(a.reveal, b.reveal);
+        if (linkReveal <= 0) continue;
         const dist = Math.hypot(a.x - b.x, a.y - b.y);
         if (dist < LINK_DIST) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST)})`;
+          ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST) * linkReveal})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
@@ -452,20 +501,29 @@ const NETWORK_LOGOS = [
 
   const drawNodes = () => {
     nodes.forEach(n => {
-      let size = n.size;
-      let alpha = 0.85;
+      if (n.reveal <= 0) return;
+      // Subtle grow-in alongside the fade, not just an alpha snap.
+      let size = n.size * (0.4 + 0.6 * n.reveal);
+      let alpha = 0.85 * n.reveal;
+      let glow = 0;
       if (mouse.active) {
         const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
         if (dist < CURSOR_LINK_DIST) {
           const boost = 1 - dist / CURSOR_LINK_DIST;
           size += boost * 1.5;
           alpha = Math.min(1, alpha + boost * 0.3);
+          glow = boost;
         }
       }
       ctx.beginPath();
       ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      if (glow > 0) {
+        ctx.shadowBlur = glow * 22;
+        ctx.shadowColor = 'rgba(255,255,255,.95)';
+      }
       ctx.fill();
+      if (glow > 0) ctx.shadowBlur = 0;
     });
   };
 
@@ -490,7 +548,16 @@ const NETWORK_LOGOS = [
     // node field dissolves away as it parallax-scrolls out of the hero
     // instead of just sliding off with a hard edge.
     const heroFadeProgress = Math.min(window.scrollY / window.innerHeight, 1);
-    canvas.style.opacity = String(1 - heroFadeProgress);
+    const now = performance.now();
+    const loadIn = smoothstep(Math.min((now - loadStart) / LOAD_IN_MS, 1));
+    canvas.style.opacity = String((1 - heroFadeProgress) * loadIn);
+    // Each node's own reveal — a wave sweeping out from center, computed
+    // once per frame and reused by both drawLinks and drawNodes below.
+    const elapsed = now - loadStart;
+    nodes.forEach(n => {
+      const t = (elapsed - n.waveDelay) / NODE_FADE;
+      n.reveal = smoothstep(Math.min(Math.max(t, 0), 1));
+    });
     canvas.style.filter = heroFadeProgress > 0 ? `blur(${heroFadeProgress * 16}px)` : 'none';
     ctx.clearRect(0, 0, w, h);
 
@@ -552,7 +619,15 @@ const NETWORK_LOGOS = [
   makeNodes();
 
   window.addEventListener('resize', () => { resize(); makeNodes(); });
-  heroEl.addEventListener('mousemove', (e) => {
+  // Listens on window (not heroEl) so the hover reach covers the full
+  // viewport width, including the UW margins outside .wrap — only the
+  // vertical range stays gated to the hero section's own bounds.
+  window.addEventListener('mousemove', (e) => {
+    const heroRect = heroEl.getBoundingClientRect();
+    if (e.clientY < heroRect.top || e.clientY > heroRect.bottom) {
+      mouse.active = false;
+      return;
+    }
     // canvas.getBoundingClientRect() already reflects its live parallax
     // transform, so this lines up with the canvas's local drawing space
     // with no extra math needed.
@@ -566,7 +641,9 @@ const NETWORK_LOGOS = [
     }
     mouse.active = true;
   });
-  heroEl.addEventListener('mouseleave', () => { mouse.active = false; });
+  window.addEventListener('mouseout', (e) => {
+    if (!e.relatedTarget) mouse.active = false;
+  });
 
   raf = requestAnimationFrame(step);
 })();
@@ -617,8 +694,10 @@ if (aboutSection && aboutWords.length) {
 // a slightly different rate for the parallax feel).
 const statsSection = document.querySelector('.stats');
 const statEls = document.querySelectorAll('.stat');
-const STATS_ENTRY_END = 0.6; // fraction of the pin's scroll spent on the build-up
-const STATS_EXIT_START = 0.8; // all 3 stay fully visible until this fraction, then fade out
+const statsIsUW = window.matchMedia('(min-width:1920px)').matches;
+// UW: longer build-up and a longer fade-out, with a shorter hold between them.
+const STATS_ENTRY_END = statsIsUW ? 0.68 : 0.6; // fraction of the pin's scroll spent on the build-up
+const STATS_EXIT_START = statsIsUW ? 0.72 : 0.8; // all 3 stay fully visible until this fraction, then fade out
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
@@ -831,18 +910,25 @@ if (statsSection && statEls.length) {
     nodes.forEach(n => {
       let size = n.size;
       let alpha = 0.85;
+      let glow = 0;
       if (mouse.active) {
         const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
         if (dist < CURSOR_LINK_DIST) {
           const boost = 1 - dist / CURSOR_LINK_DIST;
           size += boost * 1.5;
           alpha = Math.min(1, alpha + boost * 0.3);
+          glow = boost;
         }
       }
       ctx.beginPath();
       ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      if (glow > 0) {
+        ctx.shadowBlur = glow * 22;
+        ctx.shadowColor = 'rgba(255,255,255,.95)';
+      }
       ctx.fill();
+      if (glow > 0) ctx.shadowBlur = 0;
     });
   };
 
@@ -946,6 +1032,215 @@ if (statsSection && statEls.length) {
   requestAnimationFrame(draw);
 })();
 
+let midLeadProgress = 0; // shared with the pulse-ring background below
+let midLeadExitProgress = 0; // shared with the pulse-ring background below
+
+// Mid-lead statement (between Portfolio and Team): pinned while the two
+// lines fade/blur in staggered — one, then the other — hold, then fade/blur
+// out together as the pin releases. Same technique as Stats.
+(() => {
+  const section = document.querySelector('.mid-lead');
+  const lines = document.querySelectorAll('.mid-lead-light, .mid-lead-bold');
+  if (!section || !lines.length) return;
+
+  if (reduceMotion) {
+    lines.forEach(el => { el.style.opacity = '1'; });
+    return;
+  }
+
+  const ENTRY_END = 0.38; // fraction of the pin's scroll spent staggering the two lines in
+  const EXIT_START = 0.78; // both lines stay fully visible until this fraction, then fade out together
+  const total = lines.length;
+  let ticking = false;
+
+  const update = () => {
+    const scrollable = section.offsetHeight - window.innerHeight;
+    const progress = scrollable > 0
+      ? Math.min(Math.max(-section.getBoundingClientRect().top / scrollable, 0), 1)
+      : 0;
+
+    const entryProgress = Math.min(progress / ENTRY_END, 1);
+    const exitProgress = smoothstep(Math.max((progress - EXIT_START) / (1 - EXIT_START), 0));
+    midLeadProgress = progress;
+    midLeadExitProgress = exitProgress;
+    const scaled = entryProgress * total;
+
+    lines.forEach((el, i) => {
+      const local = Math.min(Math.max(scaled - i, 0), 1);
+      // Eased (not linear) and spread over nearly this whole line's segment,
+      // so the entrance reads as a slow settle instead of a snap.
+      const p = smoothstep(Math.min(local / 0.95, 1));
+      const enterOffset = 46 * (1 - p);
+      const entryBlur = 20 * (1 - p);
+      const exitBlur = exitProgress * 20;
+      const blur = Math.max(entryBlur, exitBlur);
+      // Top line travels further/faster on exit than the bottom one, so it
+      // clears out of the way instead of the bottom line catching up to it.
+      const exitOffset = -exitProgress * (50 + (total - 1 - i) * 30);
+      // Slow, always-on drift while pinned and fully visible — a subtle
+      // parallax so the hold never reads as a dead stop.
+      const holdDrift = -progress * (16 + i * 12);
+
+      el.style.opacity = String(p * (1 - exitProgress));
+      el.style.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
+      el.style.transform = `translateY(${enterOffset + exitOffset + holdDrift}px)`;
+    });
+
+    ticking = false;
+  };
+
+  const onScroll = () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+})();
+
+// Mid-lead background: rings settle in once, automatically, then sit still
+// as a fixed target pattern (each ring also trails the cursor a little,
+// accordion-style). Hovering doesn't add a new ring — it sends a subtle
+// pulse through those same settled rings, center-out: each one briefly
+// bulges outward (radius only, no color/brightness change), inner ring
+// first. The whole canvas still fades/blurs/parallaxes with scroll
+// progress, same treatment as the stats-nodes background.
+(() => {
+  const canvas = document.querySelector('.mid-lead-pulse');
+  const pinEl = document.querySelector('.mid-lead-pin');
+  if (!canvas || reduceMotion) return;
+
+  const ctx = canvas.getContext('2d');
+  const RING_COUNT = 6;
+  const RADIUS_SCALE = 0.9; // resting radii stay inside this fraction of the canvas, leaving room for the pulse bulge + follow offset
+  const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+  // One-time settle-in: each ring grows from the center out to its own
+  // fixed resting radius, staggered slightly, decelerating hard into place
+  // — then just stays there as a static pattern (no fade, no reset).
+  const SETTLE_STAGGER = 160; // ms between each ring's settle start
+  const SETTLE_DURATION = 1800; // ms for one ring to settle into place
+  let settleStart = null;
+
+  // Hover pulse: travels outward through the settled rings themselves
+  // (inner to outer), each one bulging out (radius only — no brightness
+  // change) as the pulse passes through it, then easing back to rest.
+  const PULSE_STAGGER = 260; // ms before the pulse reaches the next ring out
+  const PULSE_DURATION = 1300; // ms for one ring's bulge-and-back
+  let pulses = [];
+
+  let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Each ring trails the cursor on its own, accordion-style — the innermost
+  // ring is the most flexible (follows closest), and each ring out from
+  // there follows less, down to the outer ring which barely moves. Every
+  // ring's own follow offset is still capped well under the gap between
+  // ring radii, so even moving independently they never touch or cross.
+  const FOLLOW_MAX = 60; // px, innermost ring's cap
+  let mouseX = 0, mouseY = 0;
+  const followX = new Array(RING_COUNT).fill(0);
+  const followY = new Array(RING_COUNT).fill(0);
+
+  if (pinEl) {
+    pinEl.addEventListener('mouseenter', () => {
+      pulses.push({ launch: performance.now() });
+    });
+  }
+  // Tracked on window (not just while hovering the pin) so the rings keep
+  // leaning toward wherever the cursor actually is, capped by each ring's
+  // own follow distance either way.
+  window.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left - rect.width / 2;
+    mouseY = e.clientY - rect.top - rect.height / 2;
+  });
+
+  const resize = () => {
+    const rect = canvas.getBoundingClientRect();
+    w = rect.width;
+    h = rect.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  const draw = (now) => {
+    resize();
+    ctx.clearRect(0, 0, w, h);
+
+    const maxRadius = Math.min(w, h) / 2;
+    const ringGap = maxRadius / RING_COUNT;
+
+    // Kicks off automatically the first time the pin actually starts
+    // engaging (not on page load, so it's timed with the section arriving).
+    if (settleStart === null && midLeadProgress > 0.01) settleStart = now;
+
+    const pulseDone = (RING_COUNT - 1) * PULSE_STAGGER + PULSE_DURATION;
+    pulses = pulses.filter(p => now - p.launch < pulseDone);
+
+    if (settleStart !== null) {
+      for (let i = 0; i < RING_COUNT; i++) {
+        // Accordion follow: innermost ring (i=0) is the most flexible,
+        // each ring out from there follows less. Independent per-ring, but
+        // every ring's cap is small next to the gap between ring radii, so
+        // they never touch or cross regardless of direction.
+        const followStrength = 0.08 + 0.92 * Math.pow(1 - i / (RING_COUNT - 1), 1.6);
+        const cap = FOLLOW_MAX * followStrength;
+        const targetX = Math.max(-cap, Math.min(cap, mouseX * 0.06 * followStrength));
+        const targetY = Math.max(-cap, Math.min(cap, mouseY * 0.06 * followStrength));
+        followX[i] += (targetX - followX[i]) * 0.07;
+        followY[i] += (targetY - followY[i]) * 0.07;
+        const cx = w / 2 + followX[i], cy = h / 2 + followY[i];
+
+        // Resting radii stop short of the canvas edge (RADIUS_SCALE), so the
+        // pulse bulge and the follow offset both have headroom to expand
+        // into without the outer ring's stroke clipping against the frame.
+        const target = ((i + 1) / RING_COUNT) * maxRadius * RADIUS_SCALE;
+        const elapsed = now - settleStart - i * SETTLE_STAGGER;
+        const t = Math.min(Math.max(elapsed / SETTLE_DURATION, 0), 1);
+        let radius = easeOutQuart(t) * target;
+        const alpha = 0.22 * (1 - i / RING_COUNT * 0.6);
+
+        pulses.forEach(p => {
+          const pElapsed = now - p.launch - i * PULSE_STAGGER;
+          const pt = pElapsed / PULSE_DURATION;
+          if (pt < 0 || pt > 1) return;
+          // Rises to a peak mid-bulge, then eases back — radius only, no
+          // brightness change, so it reads as a physical push, not a glow.
+          const bump = Math.sin(pt * Math.PI);
+          radius += bump * ringGap * 0.18;
+        });
+
+        if (radius <= 0) continue;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,255,255,${Math.min(alpha, 1)})`;
+        ctx.lineWidth = 1;
+        // A soft glow reads as a little lift/depth off the page, rather
+        // than a flat drawn line.
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(255,255,255,.5)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // The canvas is centered via CSS transform, so every frame here must
+    // re-apply that centering alongside the parallax offset.
+    const entryFactor = smoothstep(Math.min(midLeadProgress / 0.24, 1));
+    const fadeOpacity = 0.8 * entryFactor * (1 - Math.min(midLeadExitProgress * 1.1, 1));
+    const entryBlur = (1 - entryFactor) * 14;
+    const parallaxY = (0.35 - midLeadProgress) * 140;
+    canvas.style.opacity = String(fadeOpacity);
+    canvas.style.filter = entryBlur > 0.5 ? `blur(${entryBlur}px)` : 'none';
+    canvas.style.transform = `translate(-50%,-50%) translateY(${parallaxY}px)`;
+
+    requestAnimationFrame(draw);
+  };
+
+  requestAnimationFrame(draw);
+})();
+
 // Portfolio cards: cursor glow + very soft tilt, both trailing with an eased delay
 const CARD_MAX_TILT = 3; // degrees
 
@@ -1029,5 +1324,24 @@ if (teamGrid) {
       });
     }, { threshold: 0.2 });
     teamIo.observe(teamGrid);
+  }
+}
+
+// Co-Investors grid: simple fade/blur/rise reveal, same pattern as the team grid.
+const coInvestorsGrid = document.querySelector('.co-investors-grid');
+
+if (coInvestorsGrid) {
+  if (reduceMotion) {
+    coInvestorsGrid.classList.add('is-visible');
+  } else {
+    const coInvestorsIo = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          coInvestorsGrid.classList.add('is-visible');
+          coInvestorsIo.disconnect();
+        }
+      });
+    }, { threshold: 0.2 });
+    coInvestorsIo.observe(coInvestorsGrid);
   }
 }
