@@ -142,9 +142,9 @@ if (footerLogo && !reduceMotion) {
   footerLogo.classList.add('is-revealed');
 }
 
-// Network closing line + subcopy: simple one-time reveal, not tied to any
-// pin's scroll progress.
-document.querySelectorAll('.network-lead-after, .network-subcopy').forEach(el => {
+// Network closing line + subcopy, and the Portfolio/Team section titles:
+// simple one-time fade+blur reveal, not tied to any pin's scroll progress.
+document.querySelectorAll('.network-lead-after, .network-subcopy, .portfolio .section-title h2, .team .section-title h2').forEach(el => {
   if (reduceMotion) {
     el.classList.add('is-visible');
     return;
@@ -323,9 +323,9 @@ const NETWORK_LOGOS = [
   const isUW = window.matchMedia('(min-width:1920px)').matches;
   const sampleLogo = document.querySelector('.network-logo');
   const logoH = sampleLogo ? sampleLogo.getBoundingClientRect().height : 120;
-  // UW: pre-reveal ("closed") sliver is much thinner (16px) so the gap
-  // before the curtain opens doesn't read as dead space.
-  const CURTAIN_HEIGHT = isRetinaBand ? logoH : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
+  // Pre-reveal ("closed") sliver is thin everywhere the curtain trick is
+  // used, so the gap before it opens doesn't read as dead space.
+  const CURTAIN_HEIGHT = isRetinaBand ? 16 : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
   const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
@@ -1280,31 +1280,39 @@ document.querySelectorAll('.card, .team-card').forEach(card => {
   });
 });
 
-// Portfolio cards: staggered reveal, left to right.
-// Stagger is done with setTimeout (not CSS transition-delay) so the delay
-// never lingers on the card and hover reacts the same on every card.
-const grid = document.querySelector('.grid');
+// Portfolio: pinned while the cards reveal right to left, tied to scroll
+// progress (not a fixed timer) — same reveal transition each card already
+// had, just triggered by scroll position so it reads as parallax instead
+// of a canned stagger. A hold/release buffer (REVEAL_END < 1) after the
+// last card settles keeps the pin from letting go the instant it's done.
+const portfolioSection = document.querySelector('.portfolio');
 const cards = document.querySelectorAll('.card');
 
-const revealCards = () => {
-  cards.forEach((card, i) => {
-    setTimeout(() => card.classList.add('is-visible'), reduceMotion ? 0 : i * 90);
-  });
-};
+if (portfolioSection && cards.length) {
+  const REVEAL_END = 0.7;
+  const total = cards.length;
 
-if (grid) {
   if (reduceMotion) {
-    revealCards();
+    cards.forEach(card => card.classList.add('is-visible'));
   } else {
-    const gridIo = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          revealCards();
-          gridIo.disconnect();
-        }
+    let ticking = false;
+    const updatePortfolio = () => {
+      const scrollable = portfolioSection.offsetHeight - window.innerHeight;
+      const progress = scrollable > 0
+        ? Math.min(Math.max(-portfolioSection.getBoundingClientRect().top / scrollable, 0), 1)
+        : 0;
+      cards.forEach((card, i) => {
+        const reverseIndex = total - 1 - i; // rightmost/last card reveals first
+        const threshold = (reverseIndex / total) * REVEAL_END;
+        if (progress >= threshold) card.classList.add('is-visible');
       });
-    }, { threshold: 0.2 });
-    gridIo.observe(grid);
+      ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(updatePortfolio); ticking = true; }
+    }, { passive: true });
+    window.addEventListener('resize', updatePortfolio);
+    updatePortfolio();
   }
 }
 

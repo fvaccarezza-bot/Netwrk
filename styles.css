@@ -54,7 +54,7 @@ html.lenis,html.lenis body{height:auto}
   padding:clamp(10px, 2px + 0.63vw, 14px) clamp(28px, 4px + 1.88vw, 40px);background:none;pointer-events:none}
 .header a,.header button{pointer-events:auto}
 .logo{display:flex;align-items:center}
-.logo-img{display:block;height:clamp(36px, 22px + 1.09vw, 43px);width:auto}
+.logo-img{display:block;height:clamp(29px, 1px + 2.19vw, 43px);width:auto}
 body{padding-top:var(--header-h)}
 
 /* ---------- Menu toggle ---------- */
@@ -170,12 +170,23 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .about-copy .word{opacity:.25;filter:blur(6px)}
 
 /* ---------- Portfolio ---------- */
-.portfolio{padding-top:clamp(96px, -32px + 10vw, 160px);padding-bottom:clamp(48px, -16px + 5vw, 80px)}
+.portfolio{position:relative;height:240vh}
+.portfolio-pin{position:sticky;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;
+  padding:clamp(96px, -32px + 10vw, 160px) 0 clamp(48px, -16px + 5vw, 80px)}
+@media (prefers-reduced-motion: reduce){
+  .portfolio{height:auto}
+  .portfolio-pin{position:relative;height:auto}
+}
 .section-title{display:flex;align-items:center;justify-content:center;margin-bottom:clamp(28px, -4px + 2.5vw, 44px)}
 .section-title h2{margin:0;font-size:clamp(38px, 14px + 1.88vw, 50px);font-weight:400;letter-spacing:-.02em}
 .portfolio .section-title h2,
 .team .section-title h2,
-.co-investors .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6}
+.co-investors .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6;
+  opacity:0;filter:blur(10px);transform:translateY(24px);
+  transition:opacity 1s var(--ease),filter 1s var(--ease),transform 1s var(--ease)}
+.portfolio .section-title h2.is-visible,
+.team .section-title h2.is-visible,
+.co-investors .section-title h2.is-visible{opacity:1;filter:blur(0);transform:translateY(0)}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;perspective:1600px;
   width:100%;max-width:clamp(944px, -48px + 77.5vw, 1440px);margin:0 auto}
@@ -381,17 +392,25 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 
 /* ---------- Network, retina: stack copy above the marquee (instead of side by side) and widen the logo frames ---------- */
 @media (min-width:901px) and (max-width:1919.98px){
-  .network-pin{align-items:flex-start;padding-top:64px;padding-bottom:64px}
-  .network-row{flex-direction:column;align-items:flex-start;gap:48px}
-  .network-copy{width:100%;max-width:100%;text-align:center}
+  .network-pin{align-items:flex-start;padding-top:64px;padding-bottom:64px;overflow-y:hidden}
+  .network-row{flex-direction:column;align-items:flex-start;gap:20px}
+  .network-copy{width:100%;max-width:100%;text-align:center;order:1}
   .network-copy .eyebrow{text-align:center}
   .network-copy .btn{display:none}
-  .network-marquee{width:100vw;position:relative;left:50%;transform:translateX(-50%);justify-content:center}
+  .network-marquee{width:100vw;position:relative;left:50%;transform:translateX(-50%);justify-content:center;order:2}
   .marquee-col{width:clamp(90px, 7.03vw, 135px)}
   .network-logo{width:clamp(90px, 7.03vw, 135px);height:clamp(90px, 7.03vw, 135px)}
-  .network-after{padding:64px 0 160px;text-align:center}
-  .network-lead-after{width:100%;margin:0}
-  .network-subcopy{width:100%;max-width:640px;margin:24px auto 0}
+  /* Same trick as UW: eyebrow and this closing block both reveal together
+     before the pin engages, and the marquee growing between them (order:2)
+     is what visually pushes them apart — no separate section needed. */
+  .network-copy-after{display:flex;flex-direction:column;gap:20px;width:100%;align-items:center;order:3}
+  .network-lead-inline{font-family:var(--sans);font-weight:800;font-size:clamp(38px, 2px + 2.81vw, 56px);
+    line-height:1.15;letter-spacing:-.02em;color:var(--fg);margin:0;text-align:center}
+  .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
+  .network-subcopy-inline{font-family:var(--mono);font-size:clamp(12px, 0.94vw, 18px);line-height:1.7;
+    color:var(--fg-dim);margin:0 auto;text-align:center;max-width:640px}
+  .network-after{display:none}
+  .mid-lead-pulse{width:min(770px,63vw);height:min(770px,63vw)}
 }
 
 /* ---------- Footer: wordmark con blur-reveal (una sola vez, al fondo del viewport) ---------- */
