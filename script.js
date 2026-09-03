@@ -35,7 +35,7 @@ if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     dot.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
   });
 
-  const HOVER_SELECTOR = 'a, button, .card, .network-logo, .network-marquee, input, textarea, [role="button"]';
+  const HOVER_SELECTOR = 'a, button, .card, .network-logo, .network-marquee, .mid-lead-pin, input, textarea, [role="button"]';
   document.addEventListener('mouseover', (e) => {
     if (e.target.closest(HOVER_SELECTOR)) ring.classList.add('is-hover');
   });
@@ -142,9 +142,11 @@ if (footerLogo && !reduceMotion) {
   footerLogo.classList.add('is-revealed');
 }
 
-// Network closing line + subcopy, and the Portfolio/Team section titles:
-// simple one-time fade+blur reveal, not tied to any pin's scroll progress.
-document.querySelectorAll('.network-lead-after, .network-subcopy, .portfolio .section-title h2, .team .section-title h2').forEach(el => {
+// Network closing line + subcopy, and the Team section title: simple
+// one-time fade+blur reveal, not tied to any pin's scroll progress. (The
+// Portfolio title is handled inside updatePortfolio below, scrubbed off
+// that pin's own scroll progress instead.)
+document.querySelectorAll('.network-lead-after, .network-subcopy').forEach(el => {
   if (reduceMotion) {
     el.classList.add('is-visible');
     return;
@@ -201,7 +203,7 @@ const NETWORK_LOGOS = [
 
   const isRetinaBand = window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches;
   const isUW = window.matchMedia('(min-width:1920px)').matches;
-  const COLS = isRetinaBand ? 9 : (isUW ? 9 : 4);
+  const COLS = isRetinaBand ? 9 : (isUW ? 10 : 4);
   const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, base pace
   const IDLE_MULTIPLIER = 4; // fast while not hovering
   const HOVER_MULTIPLIER = 1; // slows down to the base pace on hover
@@ -648,6 +650,46 @@ const NETWORK_LOGOS = [
   raf = requestAnimationFrame(step);
 })();
 
+// Hero content (eyebrow/h1/sub/button, as one block): fades and blurs out
+// over the first viewport height of scroll — same duration as the node
+// canvas's own fade above — with a slow upward parallax drift and a faint
+// scale-down eased in underneath, so it reads as a soft exhale rather than
+// a flat dissolve.
+(() => {
+  const heroEl = document.querySelector('.hero');
+  const heroContent = document.querySelectorAll('.hero > *:not(.hero-nodes)');
+  if (!heroEl || !heroContent.length || reduceMotion) return;
+
+  let ticking = false;
+  const update = () => {
+    const progress = Math.min(window.scrollY / window.innerHeight, 1);
+    const eased = smoothstep(progress);
+    const blur = eased * 14;
+    heroContent.forEach(el => {
+      // These elements also carry a CSS transition for their page-load
+      // reveal — left in place, it would fight this per-frame scroll-scrub
+      // (every inline update animating smoothly over ~1s instead of
+      // tracking scroll immediately), so it's cut once scroll-driven
+      // updates take over.
+      el.style.transition = 'none';
+      el.style.opacity = String(1 - eased);
+      el.style.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
+      el.style.transform = `translateY(${-window.scrollY * 0.3}px) scale(${1 - eased * 0.05})`;
+    });
+    ticking = false;
+  };
+  // Not run eagerly on load: at scrollY 0 this would resolve to the same
+  // "fully visible" values the page-load CSS reveal ends at anyway, but
+  // running it immediately would stamp that as an inline style before the
+  // load-in transition (opacity 0 → 1, blurred → sharp) ever gets to play,
+  // skipping it outright. Only reacting to real scroll events sidesteps
+  // that — nothing here touches these elements until the user has
+  // actually scrolled.
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+})();
+
 // About: pinned section with a scroll-scrubbed, word-by-word blur reveal
 const aboutSection = document.querySelector('.about');
 const aboutWords = document.querySelectorAll('.about-copy .word');
@@ -695,9 +737,10 @@ if (aboutSection && aboutWords.length) {
 const statsSection = document.querySelector('.stats');
 const statEls = document.querySelectorAll('.stat');
 const statsIsUW = window.matchMedia('(min-width:1920px)').matches;
-// UW: longer build-up and a longer fade-out, with a shorter hold between them.
-const STATS_ENTRY_END = statsIsUW ? 0.68 : 0.6; // fraction of the pin's scroll spent on the build-up
-const STATS_EXIT_START = statsIsUW ? 0.72 : 0.8; // all 3 stay fully visible until this fraction, then fade out
+// UW: longer build-up, then a longer hold (slow parallax drift, fully
+// revealed, before anything starts leaving) than before it fades out.
+const STATS_ENTRY_END = statsIsUW ? 0.54 : 0.6; // fraction of the pin's scroll spent on the build-up
+const STATS_EXIT_START = statsIsUW ? 0.79 : 0.8; // all 3 stay fully visible until this fraction, then fade out
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
@@ -1041,6 +1084,8 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
 (() => {
   const section = document.querySelector('.mid-lead');
   const lines = document.querySelectorAll('.mid-lead-light, .mid-lead-bold');
+  const outro = document.querySelector('.mid-lead-outro');
+  const previewCards = document.querySelectorAll('.mid-lead-card-slot');
   if (!section || !lines.length) return;
 
   if (reduceMotion) {
@@ -1048,9 +1093,15 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     return;
   }
 
-  const ENTRY_END = 0.38; // fraction of the pin's scroll spent staggering the two lines in
-  const EXIT_START = 0.78; // both lines stay fully visible until this fraction, then fade out together
-  const total = lines.length;
+  const ENTRY_END = 0.38; // fraction of the text phase spent revealing both lines together
+  const EXIT_START = 0.6; // both lines stay fully visible until this fraction of the text phase, then fade out together
+  // The statement + outro (entry/hold/exit/outro-in) play out exactly as
+  // before, just compressed into the first 75% of the pin's scroll — the
+  // last 25% is a new phase where the outro hands off to the two team
+  // preview cards, sliding in from opposite sides.
+  const TEXT_PHASE_END = 0.75;
+  const CARD_GAP = 28; // px gap between the two cards' inner edges at rest
+  const CARD_ENTER_PUSH = 320; // extra px each card starts further out and slides in from
   let ticking = false;
 
   const update = () => {
@@ -1059,32 +1110,68 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
       ? Math.min(Math.max(-section.getBoundingClientRect().top / scrollable, 0), 1)
       : 0;
 
-    const entryProgress = Math.min(progress / ENTRY_END, 1);
-    const exitProgress = smoothstep(Math.max((progress - EXIT_START) / (1 - EXIT_START), 0));
+    const textProgress = Math.min(progress / TEXT_PHASE_END, 1);
+    const entryProgress = Math.min(textProgress / ENTRY_END, 1);
+    const exitProgress = smoothstep(Math.max((textProgress - EXIT_START) / (1 - EXIT_START), 0));
+    const cardsProgress = smoothstep(Math.min(Math.max((progress - TEXT_PHASE_END) / (1 - TEXT_PHASE_END), 0), 1));
     midLeadProgress = progress;
     midLeadExitProgress = exitProgress;
-    const scaled = entryProgress * total;
 
     lines.forEach((el, i) => {
-      const local = Math.min(Math.max(scaled - i, 0), 1);
+      // Both lines share the same entryProgress — enter together, not
+      // staggered one after the other (that read as a mistake, not a beat).
+      const local = entryProgress;
       // Eased (not linear) and spread over nearly this whole line's segment,
       // so the entrance reads as a slow settle instead of a snap.
       const p = smoothstep(Math.min(local / 0.95, 1));
-      const enterOffset = 46 * (1 - p);
+      // Enters from the same side it later exits toward — top line drops
+      // in from above, bottom line rises in from below.
+      const enterOffset = (i === 0 ? -1 : 1) * 46 * (1 - p);
       const entryBlur = 20 * (1 - p);
       const exitBlur = exitProgress * 20;
       const blur = Math.max(entryBlur, exitBlur);
-      // Top line travels further/faster on exit than the bottom one, so it
-      // clears out of the way instead of the bottom line catching up to it.
-      const exitOffset = -exitProgress * (50 + (total - 1 - i) * 30);
-      // Slow, always-on drift while pinned and fully visible — a subtle
-      // parallax so the hold never reads as a dead stop.
-      const holdDrift = -progress * (16 + i * 12);
+      // The two lines part ways on exit — top line up, bottom line down —
+      // opening a gap in the middle for the outro to reveal into. Nothing
+      // drifts during the hold anymore: it just sits centered and still
+      // until the exit actually starts.
+      const exitOffset = (i === 0 ? -1 : 1) * exitProgress * 220;
 
       el.style.opacity = String(p * (1 - exitProgress));
       el.style.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
-      el.style.transform = `translateY(${enterOffset + exitOffset + holdDrift}px)`;
+      el.style.transform = `translateY(${enterOffset + exitOffset}px)`;
     });
+
+    // "We can do it" fades in over the back half of the exit — by then the
+    // statement has cleared out and the rings (see the pulse IIFE) have
+    // zoomed past their fade-out point, so it settles into the same empty
+    // center they leave behind.
+    if (outro) {
+      const outroIn = smoothstep(Math.min(Math.max((exitProgress - 0.5) / 0.5, 0), 1));
+      // Grows in from a bit smaller than full size — reads as emerging out
+      // of that same center point, not just fading up in place. Fades back
+      // out (and blurs again) as the preview cards take over the center.
+      const outroScale = 0.72 + 0.28 * outroIn;
+      const outroBlur = Math.max((1 - outroIn) * 16, cardsProgress * 16);
+
+      outro.style.opacity = String(outroIn * (1 - cardsProgress));
+      outro.style.filter = outroBlur > 0.5 ? `blur(${outroBlur}px)` : 'none';
+      outro.style.transform = `translate(-50%,-50%) scale(${outroScale})`;
+    }
+
+    // The two team-preview cards settle in from opposite sides into the
+    // same center the outro just vacated — still inside this same pin.
+    if (previewCards.length) {
+      const cardGrow = smoothstep(cardsProgress);
+      previewCards.forEach(card => {
+        const dir = card.classList.contains('mid-lead-card-slot-left') ? -1 : 1;
+        const restOffset = card.offsetWidth / 2 + CARD_GAP;
+        const xOffset = dir * (restOffset + (1 - cardGrow) * CARD_ENTER_PUSH);
+        const blur = (1 - cardGrow) * 18;
+        card.style.opacity = String(cardGrow);
+        card.style.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
+        card.style.setProperty('--slide-x', `${xOffset}px`);
+      });
+    }
 
     ticking = false;
   };
@@ -1113,6 +1200,10 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   const ctx = canvas.getContext('2d');
   const RING_COUNT = 6;
   const RADIUS_SCALE = 0.9; // resting radii stay inside this fraction of the canvas, leaving room for the pulse bulge + follow offset
+  // The canvas element (in CSS) is physically 4x its old size, purely to
+  // give the exit zoom room to grow into without clipping — dividing back
+  // out here keeps every resting/settled size exactly as it was before.
+  const CANVAS_OVERSIZE = 4;
   const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
 
   // One-time settle-in: each ring grows from the center out to its own
@@ -1120,6 +1211,7 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   // — then just stays there as a static pattern (no fade, no reset).
   const SETTLE_STAGGER = 160; // ms between each ring's settle start
   const SETTLE_DURATION = 1800; // ms for one ring to settle into place
+  const RINGS_SETTLED_AT = (RING_COUNT - 1) * SETTLE_STAGGER + SETTLE_DURATION; // ms after settleStart when the last ring finishes
   let settleStart = null;
 
   // Hover pulse: travels outward through the settled rings themselves
@@ -1140,6 +1232,45 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   let mouseX = 0, mouseY = 0;
   const followX = new Array(RING_COUNT).fill(0);
   const followY = new Array(RING_COUNT).fill(0);
+
+  // Small satellite nodes scattered around the rings, each tethered by a
+  // thin line to a point on whichever ring it's assigned to (same live
+  // angle, so the line always lands exactly on that ring's edge) — home
+  // position is (angle, radius fraction) re-derived every frame off the
+  // ring's own current center/radius, so it rides along with the follow
+  // and the exit zoom automatically. The angle itself slowly advances too
+  // (orbitDir sets which way), so the whole node+tether pair revolves
+  // around its ring instead of just sitting at a fixed bearing.
+  const FLOAT_NODE_COUNT = 18;
+  const NODE_SETTLE_STAGGER = 70; // ms before the next node starts popping in
+  const NODE_SETTLE_DURATION = 1700; // ms for one node to grow to full size — slow
+  const floatNodes = Array.from({ length: FLOAT_NODE_COUNT }, (_, i) => {
+    // Round-robin across rings (not a flat random pick) so nodes end up
+    // balanced across all of them instead of randomly clustering on a few.
+    const ring = i % RING_COUNT;
+    // Always outward — the tether always reads inside (ring) to outside
+    // (node) — with a random but bounded distance, never close to 0, so
+    // it's never a near-invisible stub either.
+    const offset = 0.22 + Math.random() * 0.5;
+    // Evenly spaced base angle (a full slice of the circle per node) with
+    // some jitter within that slice — random alone left visible empty
+    // sectors with only 14 of them; this guarantees no big gap.
+    const slice = (Math.PI * 2) / FLOAT_NODE_COUNT;
+    const angle = i * slice + (Math.random() - 0.5) * slice * 0.7;
+    return {
+      angle,
+      offset,
+      ring,
+      size: 1.6 + Math.random() * 1.8,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.7 + Math.random() * 0.6,
+      orbitDir: Math.random() < 0.5 ? 1 : -1,
+      orbitSpeed: 0.00003 + Math.random() * 0.00003,
+      // Own random stagger within the post-rings pop-in, shuffled so it
+      // doesn't just mirror ring/index order.
+      settleDelay: Math.random() * FLOAT_NODE_COUNT * NODE_SETTLE_STAGGER,
+    };
+  });
 
   if (pinEl) {
     pinEl.addEventListener('mouseenter', () => {
@@ -1168,7 +1299,7 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     resize();
     ctx.clearRect(0, 0, w, h);
 
-    const maxRadius = Math.min(w, h) / 2;
+    const maxRadius = Math.min(w, h) / 2 / CANVAS_OVERSIZE;
     const ringGap = maxRadius / RING_COUNT;
 
     // Kicks off automatically the first time the pin actually starts
@@ -1178,19 +1309,39 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     const pulseDone = (RING_COUNT - 1) * PULSE_STAGGER + PULSE_DURATION;
     pulses = pulses.filter(p => now - p.launch < pulseDone);
 
+    // Exit: as the statement fades out (see the text IIFE), the rings zoom
+    // outward together — as if drifting into the center of the formation —
+    // scaled by the same exitProgress. Once the outermost/biggest ring's
+    // own scaled size passes FADE_AT, every ring starts fading out with
+    // blur, referenced off that same biggest ring so they all fade in sync.
+    const zoomScale = 1 + midLeadExitProgress * 2.6;
+    const FADE_AT = 1.5; // zoomScale at which the biggest ring starts fading
+    const fadeT = smoothstep(Math.min(Math.max((zoomScale - FADE_AT) / (1 + 2.6 - FADE_AT), 0), 1));
+
+    // Ring centers/radii, computed once per frame (not re-derived below) so
+    // the floating nodes' tethers always land exactly where each ring is
+    // actually drawn — settle-in progress, zoom and pulse-bulge included —
+    // instead of a separate approximation that could drift out of sync.
+    const ringCenters = [];
+    const ringRadii = new Array(RING_COUNT).fill(0);
+    for (let i = 0; i < RING_COUNT; i++) {
+      // Accordion follow: innermost ring (i=0) is the most flexible, each
+      // ring out from there follows less. Independent per-ring, but every
+      // ring's cap is small next to the gap between ring radii, so they
+      // never touch or cross regardless of direction. Keeps running through
+      // the exit/zoom too — freezing it caused a jarring snap-to-center.
+      const followStrength = 0.08 + 0.92 * Math.pow(1 - i / (RING_COUNT - 1), 1.6);
+      const cap = FOLLOW_MAX * followStrength;
+      const targetX = Math.max(-cap, Math.min(cap, mouseX * 0.06 * followStrength));
+      const targetY = Math.max(-cap, Math.min(cap, mouseY * 0.06 * followStrength));
+      followX[i] += (targetX - followX[i]) * 0.07;
+      followY[i] += (targetY - followY[i]) * 0.07;
+      ringCenters.push({ x: w / 2 + followX[i], y: h / 2 + followY[i] });
+    }
+
     if (settleStart !== null) {
       for (let i = 0; i < RING_COUNT; i++) {
-        // Accordion follow: innermost ring (i=0) is the most flexible,
-        // each ring out from there follows less. Independent per-ring, but
-        // every ring's cap is small next to the gap between ring radii, so
-        // they never touch or cross regardless of direction.
-        const followStrength = 0.08 + 0.92 * Math.pow(1 - i / (RING_COUNT - 1), 1.6);
-        const cap = FOLLOW_MAX * followStrength;
-        const targetX = Math.max(-cap, Math.min(cap, mouseX * 0.06 * followStrength));
-        const targetY = Math.max(-cap, Math.min(cap, mouseY * 0.06 * followStrength));
-        followX[i] += (targetX - followX[i]) * 0.07;
-        followY[i] += (targetY - followY[i]) * 0.07;
-        const cx = w / 2 + followX[i], cy = h / 2 + followY[i];
+        const cx = ringCenters[i].x, cy = ringCenters[i].y;
 
         // Resting radii stop short of the canvas edge (RADIUS_SCALE), so the
         // pulse bulge and the follow offset both have headroom to expand
@@ -1198,42 +1349,100 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
         const target = ((i + 1) / RING_COUNT) * maxRadius * RADIUS_SCALE;
         const elapsed = now - settleStart - i * SETTLE_STAGGER;
         const t = Math.min(Math.max(elapsed / SETTLE_DURATION, 0), 1);
-        let radius = easeOutQuart(t) * target;
-        const alpha = 0.22 * (1 - i / RING_COUNT * 0.6);
+        let radius = easeOutQuart(t) * target * zoomScale;
+        let alpha = 0.22 * (1 - i / RING_COUNT * 0.6) * (1 - fadeT);
 
         pulses.forEach(p => {
           const pElapsed = now - p.launch - i * PULSE_STAGGER;
           const pt = pElapsed / PULSE_DURATION;
           if (pt < 0 || pt > 1) return;
-          // Rises to a peak mid-bulge, then eases back — radius only, no
-          // brightness change, so it reads as a physical push, not a glow.
+          // Rises to a peak mid-bulge, then eases back — just a physical
+          // push, no glow riding along with it.
           const bump = Math.sin(pt * Math.PI);
           radius += bump * ringGap * 0.18;
         });
 
-        if (radius <= 0) continue;
+        ringRadii[i] = radius;
+        if (radius <= 0 || alpha <= 0.01) continue;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(255,255,255,${Math.min(alpha, 1)})`;
         ctx.lineWidth = 1;
         // A soft glow reads as a little lift/depth off the page, rather
-        // than a flat drawn line.
-        ctx.shadowBlur = 8;
+        // than a flat drawn line — no extra boost from the hover pulse
+        // itself (radius push is plenty), just from the exit zoom-fade.
+        ctx.shadowBlur = 8 + fadeT * 24;
         ctx.shadowColor = 'rgba(255,255,255,.5)';
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
+
+      const nodeAlpha = 0.5 * (1 - fadeT);
+      if (nodeAlpha > 0.01) {
+        floatNodes.forEach(n => {
+          // Nodes start growing in while the rings are still finishing up
+          // (not waiting for every last one to fully settle), each with its
+          // own small extra stagger on top of that.
+          const nodeElapsed = now - settleStart - RINGS_SETTLED_AT * 0.6 - n.settleDelay;
+          const nodeT = Math.min(Math.max(nodeElapsed / NODE_SETTLE_DURATION, 0), 1);
+          if (nodeT <= 0) return;
+          const nodeGrow = easeOutQuart(nodeT);
+
+          const ring = ringCenters[n.ring];
+          // Slowly orbits its ring — the tether point below uses this same
+          // live angle, so the node and its line-anchor revolve together.
+          const liveAngle = n.angle + now * n.orbitSpeed * n.orbitDir;
+          // Distance-from-ring is anchored off the ring's own actual
+          // rendered radius (settle-in + zoom + pulse-bulge all included,
+          // read straight from ringRadii), not a separate approximation —
+          // so the node itself, not just its tether, rides along with any
+          // bulge/zoom exactly in sync, and the tether below always lands
+          // exactly on the ring's real current edge.
+          const ringRadius = ringRadii[n.ring];
+          // Travels out from the ring's own edge (0 extra distance) to its
+          // full resting offset as nodeGrow goes 0→1 — born at the circle,
+          // not just popping into size in its final spot.
+          const homeRadius = ringRadius + n.offset * maxRadius * RADIUS_SCALE * zoomScale * nodeGrow;
+          const wobbleX = Math.sin(now * 0.0005 * n.speed + n.phase) * 10 * nodeGrow;
+          const wobbleY = Math.cos(now * 0.0004 * n.speed + n.phase * 1.4) * 10 * nodeGrow;
+          const nx = ring.x + Math.cos(liveAngle) * homeRadius + wobbleX;
+          const ny = ring.y + Math.sin(liveAngle) * homeRadius + wobbleY;
+
+          const rx = ring.x + Math.cos(liveAngle) * ringRadius;
+          const ry = ring.y + Math.sin(liveAngle) * ringRadius;
+
+          const grownAlpha = nodeAlpha * nodeGrow;
+          ctx.strokeStyle = `rgba(255,255,255,${grownAlpha * 0.35})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(rx, ry);
+          ctx.lineTo(nx, ny);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(nx, ny, n.size * nodeGrow, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${grownAlpha})`;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = 'rgba(255,255,255,.85)';
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+      }
     }
 
     // The canvas is centered via CSS transform, so every frame here must
-    // re-apply that centering alongside the parallax offset.
+    // re-apply that centering every frame — no vertical parallax drift
+    // anymore, it just stays dead-center the whole time. The rings fading
+    // themselves out (above) handles the exit — the canvas itself only
+    // needs the entry fade/blur, plus a growing blur of its own once the
+    // zoom-fade kicks in, for a bit of extra "dissolving" depth.
     const entryFactor = smoothstep(Math.min(midLeadProgress / 0.24, 1));
-    const fadeOpacity = 0.8 * entryFactor * (1 - Math.min(midLeadExitProgress * 1.1, 1));
+    const fadeOpacity = 0.8 * entryFactor;
     const entryBlur = (1 - entryFactor) * 14;
-    const parallaxY = (0.35 - midLeadProgress) * 140;
+    const exitBlur = fadeT * 10;
     canvas.style.opacity = String(fadeOpacity);
-    canvas.style.filter = entryBlur > 0.5 ? `blur(${entryBlur}px)` : 'none';
-    canvas.style.transform = `translate(-50%,-50%) translateY(${parallaxY}px)`;
+    canvas.style.filter = (entryBlur > 0.5 || exitBlur > 0.5) ? `blur(${Math.max(entryBlur, exitBlur)}px)` : 'none';
+    canvas.style.transform = 'translate(-50%,-50%)';
 
     requestAnimationFrame(draw);
   };
@@ -1244,7 +1453,7 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
 // Portfolio cards: cursor glow + very soft tilt, both trailing with an eased delay
 const CARD_MAX_TILT = 3; // degrees
 
-document.querySelectorAll('.card, .team-card').forEach(card => {
+document.querySelectorAll('.card, .team-card, .co-investor-card').forEach(card => {
   let tx = 0, ty = 0, cx = 0, cy = 0, cw = 1, ch = 1, raf = null;
 
   const apply = () => {
@@ -1280,60 +1489,53 @@ document.querySelectorAll('.card, .team-card').forEach(card => {
   });
 });
 
-// Portfolio: pinned while the cards reveal right to left, tied to scroll
-// progress (not a fixed timer) — same reveal transition each card already
-// had, just triggered by scroll position so it reads as parallax instead
-// of a canned stagger. A hold/release buffer (REVEAL_END < 1) after the
-// last card settles keeps the pin from letting go the instant it's done.
-const portfolioSection = document.querySelector('.portfolio');
+// Portfolio: not pinned — the grid and its title reveal themselves, left to
+// right, the moment the grid enters the viewport (IntersectionObserver),
+// then a plain staggered cascade across the cards in DOM order (01 first,
+// ... 06 last), blur+fade+rise via the CSS transition already on .card.
+const grid = document.querySelector('.grid');
 const cards = document.querySelectorAll('.card');
+const portfolioTitleEl = document.querySelector('.portfolio .section-title h2');
+const CARD_STAGGER_MS = 110;
 
-if (portfolioSection && cards.length) {
-  const REVEAL_END = 0.7;
-  const total = cards.length;
-
+if (portfolioTitleEl) {
   if (reduceMotion) {
-    cards.forEach(card => card.classList.add('is-visible'));
+    portfolioTitleEl.classList.add('is-visible');
   } else {
-    let ticking = false;
-    const updatePortfolio = () => {
-      const scrollable = portfolioSection.offsetHeight - window.innerHeight;
-      const progress = scrollable > 0
-        ? Math.min(Math.max(-portfolioSection.getBoundingClientRect().top / scrollable, 0), 1)
-        : 0;
-      cards.forEach((card, i) => {
-        const reverseIndex = total - 1 - i; // rightmost/last card reveals first
-        const threshold = (reverseIndex / total) * REVEAL_END;
-        if (progress >= threshold) card.classList.add('is-visible');
-      });
-      ticking = false;
-    };
-    window.addEventListener('scroll', () => {
-      if (!ticking) { requestAnimationFrame(updatePortfolio); ticking = true; }
-    }, { passive: true });
-    window.addEventListener('resize', updatePortfolio);
-    updatePortfolio();
-  }
-}
-
-// Team cards: Nick slides in from the left, Ryan from the right
-const teamGrid = document.querySelector('.team-grid');
-
-if (teamGrid) {
-  if (reduceMotion) {
-    teamGrid.classList.add('is-visible');
-  } else {
-    const teamIo = new IntersectionObserver((entries) => {
+    const titleIo = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          teamGrid.classList.add('is-visible');
-          teamIo.disconnect();
+          portfolioTitleEl.classList.add('is-visible');
+          titleIo.disconnect();
         }
       });
-    }, { threshold: 0.2 });
-    teamIo.observe(teamGrid);
+    }, { threshold: 0 });
+    titleIo.observe(portfolioTitleEl);
   }
 }
+
+if (grid && cards.length) {
+  const revealCards = () => {
+    cards.forEach((card, i) => {
+      setTimeout(() => card.classList.add('is-visible'), reduceMotion ? 0 : i * CARD_STAGGER_MS);
+    });
+  };
+
+  if (reduceMotion) {
+    revealCards();
+  } else {
+    const gridIo = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          revealCards();
+          gridIo.disconnect();
+        }
+      });
+    }, { threshold: 0 });
+    gridIo.observe(grid);
+  }
+}
+
 
 // Co-Investors grid: simple fade/blur/rise reveal, same pattern as the team grid.
 const coInvestorsGrid = document.querySelector('.co-investors-grid');
@@ -1349,7 +1551,7 @@ if (coInvestorsGrid) {
           coInvestorsIo.disconnect();
         }
       });
-    }, { threshold: 0.2 });
+    }, { threshold: 0 });
     coInvestorsIo.observe(coInvestorsGrid);
   }
 }

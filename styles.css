@@ -170,19 +170,17 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .about-copy .word{opacity:.25;filter:blur(6px)}
 
 /* ---------- Portfolio ---------- */
-.portfolio{position:relative;height:240vh}
-.portfolio-pin{position:sticky;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;
+.portfolio{position:relative}
+.portfolio-pin{display:flex;flex-direction:column;justify-content:center;
   padding:clamp(96px, -32px + 10vw, 160px) 0 clamp(48px, -16px + 5vw, 80px)}
-@media (prefers-reduced-motion: reduce){
-  .portfolio{height:auto}
-  .portfolio-pin{position:relative;height:auto}
-}
 .section-title{display:flex;align-items:center;justify-content:center;margin-bottom:clamp(28px, -4px + 2.5vw, 44px)}
 .section-title h2{margin:0;font-size:clamp(38px, 14px + 1.88vw, 50px);font-weight:400;letter-spacing:-.02em}
 .portfolio .section-title h2,
 .team .section-title h2,
-.co-investors .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6;
-  opacity:0;filter:blur(10px);transform:translateY(24px);
+.co-investors .section-title h2{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6}
+.portfolio .section-title h2,
+.team .section-title h2,
+.co-investors .section-title h2{opacity:0;filter:blur(10px);transform:translateY(24px);
   transition:opacity 1s var(--ease),filter 1s var(--ease),transform 1s var(--ease)}
 .portfolio .section-title h2.is-visible,
 .team .section-title h2.is-visible,
@@ -195,23 +193,21 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   --mx:50%;--my:50%;--rx:0deg;--ry:0deg;--bracket:var(--line);
   opacity:0;filter:blur(18px);transform:translateY(32px) scale(.93);
   will-change:opacity,filter,transform;
-  transition:opacity 1.1s var(--ease),
-             filter 1.1s var(--ease),
-             transform .7s var(--ease)}
+  transition:opacity 1.1s var(--ease),filter 1.1s var(--ease),transform .7s var(--ease)}
 .card::before{content:'';position:absolute;left:0;top:0;width:220px;height:220px;
   transform:translate(calc(var(--mx) - 110px),calc(var(--my) - 110px));border-radius:50%;
   background:rgba(255,255,255,.05);filter:blur(45px);opacity:0;pointer-events:none;
   transition:opacity .4s var(--ease);will-change:transform}
 .card::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:
-    linear-gradient(to right,var(--bracket) 0 16px,transparent 0) top left/16px 1px no-repeat,
-    linear-gradient(to bottom,var(--bracket) 0 16px,transparent 0) top left/1px 16px no-repeat,
-    linear-gradient(to left,var(--bracket) 0 16px,transparent 0) top right/16px 1px no-repeat,
-    linear-gradient(to bottom,var(--bracket) 0 16px,transparent 0) top right/1px 16px no-repeat,
-    linear-gradient(to right,var(--bracket) 0 16px,transparent 0) bottom left/16px 1px no-repeat,
-    linear-gradient(to top,var(--bracket) 0 16px,transparent 0) bottom left/1px 16px no-repeat,
-    linear-gradient(to left,var(--bracket) 0 16px,transparent 0) bottom right/16px 1px no-repeat,
-    linear-gradient(to top,var(--bracket) 0 16px,transparent 0) bottom right/1px 16px no-repeat}
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) top left/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) top right/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top right/1px 10px no-repeat,
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) bottom left/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) bottom right/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom right/1px 10px no-repeat}
 .card:hover{--bracket:rgba(255,255,255,.6)}
 .card:hover::before{opacity:1}
 
@@ -269,10 +265,14 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 /* ---------- Mid-page lead line (between Portfolio and Team): pinned while
    the two lines fade/blur in staggered, hold, then fade/blur out together —
    same pin technique as Stats. ---------- */
-.mid-lead{position:relative;height:230vh}
+.mid-lead{position:relative;height:420vh}
 .mid-lead-pin{position:sticky;top:0;height:100vh;height:100dvh;
-  display:flex;align-items:center;justify-content:center;overflow:hidden}
-.mid-lead-pulse{position:absolute;top:50%;left:50%;width:min(1100px,90vw);height:min(1100px,90vw);
+  display:flex;align-items:center;justify-content:center;overflow:visible}
+/* Physically oversized (script.js keeps the resting ring sizes the same by
+   dividing back out) so the zoom-out on exit has real room to grow into
+   before it runs out of canvas — only the actual viewport edge should ever
+   clip it, not this box. */
+.mid-lead-pulse{position:absolute;top:50%;left:50%;width:min(4400px,360vw);height:min(4400px,360vw);
   transform:translate(-50%,-50%);z-index:0;pointer-events:none}
 .mid-lead-text{position:relative;z-index:1;margin:0 auto;max-width:1320px;text-align:center}
 /* Same size as "These aren't logos. / They're phone numbers." — weights
@@ -283,17 +283,51 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   opacity:0;will-change:opacity,filter,transform}
 .mid-lead-light{font-weight:300;color:#eaeaea}
 .mid-lead-bold{font-weight:800;color:var(--fg);margin-top:10px}
+/* Revealed in place as the statement above fades out — same pin, same
+   center, no navigation. Same lettering as .mid-lead-bold. */
+.mid-lead-outro{position:absolute;top:50%;left:50%;z-index:1;margin:0;
+  transform:translate(-50%,-50%);
+  font-family:var(--sans);font-weight:800;font-size:clamp(38px, 2px + 2.81vw, 56px);
+  letter-spacing:-.02em;line-height:1.15;color:var(--fg);text-align:center;white-space:nowrap;
+  opacity:0;pointer-events:none;will-change:opacity,filter}
+/* Team preview, revealed in the same center spot as "We can do it" fades
+   out — two cards settling in from opposite sides. */
+/* Explicit full-size + centering transform (not just top/left:50% on a
+   zero-size box) — the cards inside are absolutely positioned with an auto
+   width, so without a real containing-block size their shrink-to-fit has
+   zero available width to work with and collapses to min-content (text
+   wrapping to single words). This gives them the whole pin to shrink-to-fit
+   against, so they size naturally like the real .team-card does. */
+.mid-lead-cards{position:absolute;top:50%;left:50%;width:100%;height:100%;
+  transform:translate(-50%,-50%);z-index:1;pointer-events:none}
+/* Reuses the real .team-card component as-is (same markup/classes) so this
+   preview is visually identical to the real thing. Position and hover-tilt
+   are split across two elements on purpose: the outer slot owns the
+   scroll-scrubbed slide (a --slide-x custom property, updated every frame,
+   no transition — it has to track the scroll immediately) while the inner
+   .team-card owns the hover scale/tilt with its own normal transition. If
+   one element tried to do both, either the slide would lag behind scroll
+   (transition fighting the per-frame updates) or hovering would snap the
+   card's position instantly (no transition at all). */
+.mid-lead-card-slot{position:absolute;top:50%;left:50%;pointer-events:none;
+  transform:translate(calc(-50% + var(--slide-x, 0px)), -50%);
+  will-change:opacity,filter,transform}
+.mid-lead-cards .mid-lead-card-slot .team-card{position:relative;opacity:1;
+  pointer-events:auto;transform:none}
+.mid-lead-cards .mid-lead-card-slot .team-card:hover{transform:scale(1.015) rotateX(var(--rx)) rotateY(var(--ry))}
 
 @media (prefers-reduced-motion: reduce){
   .mid-lead{height:auto}
   .mid-lead-pin{position:relative;height:auto;padding:120px 24px}
   .mid-lead-light,.mid-lead-bold{opacity:1;filter:none;transform:none}
+  .mid-lead-outro{opacity:0;display:none}
+  .mid-lead-cards{opacity:0;display:none}
   .mid-lead-pulse{display:none}
 }
 
 /* ---------- Team ---------- */
 .team{padding-top:clamp(60px, -20px + 6.25vw, 100px);padding-bottom:clamp(120px, -40px + 12.5vw, 200px)}
-.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(28px, 4px + 1.88vw, 40px);align-items:stretch;perspective:1600px}
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(24px, 4px + 2vw, 44px);align-items:stretch;perspective:1600px}
 .team-card{position:relative;overflow:hidden;display:flex;align-items:center;gap:28px;text-align:left;min-width:0;
   background:var(--bg-soft);padding:clamp(28px, 4px + 1.88vw, 40px);
   --mx:50%;--my:50%;--rx:0deg;--ry:0deg;--bracket:var(--line);
@@ -305,14 +339,14 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   transition:opacity .4s var(--ease);will-change:transform}
 .team-card::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:
-    linear-gradient(to right,var(--bracket) 0 16px,transparent 0) top left/16px 1px no-repeat,
-    linear-gradient(to bottom,var(--bracket) 0 16px,transparent 0) top left/1px 16px no-repeat,
-    linear-gradient(to left,var(--bracket) 0 16px,transparent 0) top right/16px 1px no-repeat,
-    linear-gradient(to bottom,var(--bracket) 0 16px,transparent 0) top right/1px 16px no-repeat,
-    linear-gradient(to right,var(--bracket) 0 16px,transparent 0) bottom left/16px 1px no-repeat,
-    linear-gradient(to top,var(--bracket) 0 16px,transparent 0) bottom left/1px 16px no-repeat,
-    linear-gradient(to left,var(--bracket) 0 16px,transparent 0) bottom right/16px 1px no-repeat,
-    linear-gradient(to top,var(--bracket) 0 16px,transparent 0) bottom right/1px 16px no-repeat}
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) top left/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) top right/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top right/1px 10px no-repeat,
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) bottom left/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) bottom right/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom right/1px 10px no-repeat}
 .team-card:hover{--bracket:rgba(255,255,255,.7)}
 .team-card:hover::before{opacity:1}
 .team-card:nth-child(1){transform:translateX(-80px)}
@@ -325,21 +359,67 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   .team-card::before{display:none}
 }
 .team-photo{position:relative;z-index:1;width:clamp(176px, -72px + 19.38vw, 300px);height:clamp(176px, -72px + 19.38vw, 300px);object-fit:cover;filter:grayscale(1);flex-shrink:0}
-.team-info{position:relative;z-index:1;display:flex;flex-direction:column}
+.team-info{position:relative;z-index:1;display:flex;flex-direction:column;align-self:stretch}
 .team-name{font-family:var(--sans);font-size:clamp(21px, 7px + 1.09vw, 28px);font-weight:600;letter-spacing:-.01em;color:var(--fg)}
 .team-role{font-family:var(--mono);font-size:clamp(12px, 4px + 0.63vw, 16px);letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;margin-top:8px}
 .team-bio{font-family:var(--mono);font-size:clamp(12px, 4px + 0.63vw, 16px);line-height:1.7;color:var(--fg-dim);margin:16px 0 0;max-width:480px}
+/* Hover: rolls to a second copy of the label, pushed up from below — same
+   odometer-style reveal as the stat numbers, just for text — and the
+   trailing arrow stretches, same treatment as the .btn arrow. */
+.team-profile-link{display:inline-flex;align-items:center;gap:10px;margin-top:auto;
+  font-family:var(--mono);font-size:clamp(12px, 4px + 0.63vw, 14px);letter-spacing:.06em}
+.team-profile-link-clip{display:block;overflow:hidden;height:1.4em}
+.team-profile-link-inner{display:block;transition:transform .4s var(--ease)}
+.team-profile-link:hover .team-profile-link-inner{transform:translateY(-1.4em)}
+.team-profile-link-row{display:block;height:1.4em;line-height:1.4em;
+  text-transform:uppercase;color:var(--fg)}
+.team-profile-link:hover .btn-arrow .line{width:34px}
 
 /* ---------- Co-Investors ---------- */
 .co-investors{padding-top:clamp(96px, -32px + 10vw, 160px);padding-bottom:clamp(96px, -32px + 10vw, 160px)}
-.co-investors-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;
-  width:100%;max-width:clamp(944px, -48px + 77.5vw, 1440px);margin:0 auto;
+.co-investors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
+  width:100%;margin:0 auto;
   opacity:0;filter:blur(14px);transform:translateY(24px);
   transition:opacity .9s var(--ease),filter .9s var(--ease),transform .9s var(--ease)}
 .co-investors-grid.is-visible{opacity:1;filter:blur(0);transform:translateY(0)}
-.co-investor-card{position:relative;aspect-ratio:15/11;background:var(--bg-soft);border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim)}
+/* Same corner-bracket + cursor glow + tilt treatment as .card (portfolio) —
+   the whole grid still fades in together (above), this is just the
+   per-card hover/tilt on top, same --mx/--my/--rx/--ry driven by the same
+   cursor-tilt script. */
+.co-investor-card{position:relative;overflow:hidden;aspect-ratio:15/11;background:var(--bg-soft);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  --mx:50%;--my:50%;--rx:0deg;--ry:0deg;--bracket:var(--line);
+  transition:transform .4s var(--ease)}
+.co-investor-card::before{content:'';position:absolute;left:0;top:0;width:220px;height:220px;
+  transform:translate(calc(var(--mx) - 110px),calc(var(--my) - 110px));border-radius:50%;
+  background:rgba(255,255,255,.05);filter:blur(45px);opacity:0;pointer-events:none;
+  transition:opacity .4s var(--ease);will-change:transform}
+.co-investor-card::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) top left/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) top right/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--bracket) 0 10px,transparent 0) top right/1px 10px no-repeat,
+    linear-gradient(to right,var(--bracket) 0 10px,transparent 0) bottom left/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom left/1px 10px no-repeat,
+    linear-gradient(to left,var(--bracket) 0 10px,transparent 0) bottom right/10px 1px no-repeat,
+    linear-gradient(to top,var(--bracket) 0 10px,transparent 0) bottom right/1px 10px no-repeat}
+.co-investor-card:hover{--bracket:rgba(255,255,255,.6);transform:scale(1.02) rotateX(var(--rx)) rotateY(var(--ry))}
+.co-investor-card:hover::before{opacity:1}
+.co-investors-grid:has(.co-investor-card:hover) .co-investor-card:not(:hover){transform:scale(.97)}
+/* Sits in the grid's first cell in place of a logo — no card frame (no
+   background, no corner brackets, no hover tilt), just running text doing
+   double duty as the section's own heading. */
+.co-investors-intro{display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;text-align:left;padding:clamp(20px, 4px + 1.6vw, 32px)}
+.co-investors-intro-eyebrow{font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);
+  font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6;
+  margin:0 0 clamp(12px, 4px + 0.8vw, 18px)}
+.co-investors-intro-lead{font-family:var(--sans);font-weight:800;font-size:clamp(38px, 2px + 2.81vw, 56px);
+  line-height:1.15;letter-spacing:-.02em;color:var(--fg);margin:0}
+.co-investors-intro-lead-light{font-weight:300;color:#eaeaea}
+.co-investors-intro-copy{font-family:var(--mono);font-size:clamp(12px, 0.94vw, 18px);
+  line-height:1.7;color:var(--fg-dim);margin:clamp(12px, 4px + 0.8vw, 18px) 0 0;max-width:34ch}
 
 @media (prefers-reduced-motion: reduce){
   .co-investors-grid{opacity:1;filter:none;transform:none;transition:none}
@@ -379,9 +459,21 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .marquee-col{width:135px;flex-shrink:0;overflow:hidden}
 .marquee-track{display:flex;flex-direction:column;gap:12px;will-change:transform}
 
-.network-logo{width:135px;height:135px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;
-  border:1px solid var(--line);background:var(--bg-soft)}
+.network-logo{position:relative;width:135px;height:135px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:var(--bg-soft)}
 .network-logo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+/* Same corner-bracket frame as the portfolio cards — purely visual, no
+   hover behavior (no brightening, no glow, no scale). */
+.network-logo::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(to right,var(--line) 0 10px,transparent 0) top left/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--line) 0 10px,transparent 0) top left/1px 10px no-repeat,
+    linear-gradient(to left,var(--line) 0 10px,transparent 0) top right/10px 1px no-repeat,
+    linear-gradient(to bottom,var(--line) 0 10px,transparent 0) top right/1px 10px no-repeat,
+    linear-gradient(to right,var(--line) 0 10px,transparent 0) bottom left/10px 1px no-repeat,
+    linear-gradient(to top,var(--line) 0 10px,transparent 0) bottom left/1px 10px no-repeat,
+    linear-gradient(to left,var(--line) 0 10px,transparent 0) bottom right/10px 1px no-repeat,
+    linear-gradient(to top,var(--line) 0 10px,transparent 0) bottom right/1px 10px no-repeat}
 
 .marquee-cta{position:fixed;top:0;left:0;z-index:1000;pointer-events:none;opacity:0;
   transition:opacity .3s var(--ease);display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -404,13 +496,25 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
      before the pin engages, and the marquee growing between them (order:2)
      is what visually pushes them apart — no separate section needed. */
   .network-copy-after{display:flex;flex-direction:column;gap:20px;width:100%;align-items:center;order:3}
-  .network-lead-inline{font-family:var(--sans);font-weight:800;font-size:clamp(38px, 2px + 2.81vw, 56px);
+  .network-lead-inline{font-family:var(--sans);font-weight:800;font-size:clamp(32px, -16px + 3.75vw, 56px);
     line-height:1.15;letter-spacing:-.02em;color:var(--fg);margin:0;text-align:center}
   .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
   .network-subcopy-inline{font-family:var(--mono);font-size:clamp(12px, 0.94vw, 18px);line-height:1.7;
-    color:var(--fg-dim);margin:0 auto;text-align:center;max-width:640px}
+    color:var(--fg-dim);margin:0 auto;text-align:center;max-width:900px}
   .network-after{display:none}
-  .mid-lead-pulse{width:min(770px,63vw);height:min(770px,63vw)}
+  .mid-lead-pulse{width:min(2310px,189vw);height:min(2310px,189vw)}
+  .mid-lead-light,.mid-lead-bold{font-size:clamp(32px, -16px + 3.75vw, 56px)}
+  .mid-lead-outro{font-size:clamp(32px, -16px + 3.75vw, 56px)}
+  .co-investors-intro-lead{font-size:clamp(32px, -16px + 3.75vw, 56px)}
+  /* ~+25px taller than the 15/11 base ratio at this band's typical card
+     width (~330px) — aspect-ratio can't add a flat px amount directly, so
+     this is a fixed ratio approximating that at the band's midpoint. */
+  .card{aspect-ratio:5/4}
+  .card-logo[src*="peregrine"]{transform:scale(calc(1.1 * clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9)))}
+  .card-logo[src*="spacex"]{transform:scale(calc(1.1 * clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9)))}
+  /* 20% smaller than the shared .card-logo scale (portfolio untouched) —
+     same fluid formula, just multiplied down, frame/card size unchanged. */
+  .co-investor-card .card-logo{transform:scale(calc(0.72 * clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9)))}
 }
 
 /* ---------- Footer: wordmark con blur-reveal (una sola vez, al fondo del viewport) ---------- */
@@ -463,17 +567,24 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 
 /* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
+  :root{--wrap:1600px}
   .num,.cat{font-size:13px}
   .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
-  .grid{justify-items:center}
-  .card{width:400px;height:500px}
+  /* 3 columns of 500px cards + gaps need ~1544px — the base clamp ceiling
+     (1440px) was clipping/overflowing the grid off-center. */
+  .grid{justify-items:center;max-width:1580px}
+  .card{width:500px;height:500px}
   .card-logo{transform:scale(1.2)}
 
   /* Shortens the stats pin's scroll runway (entry/hold/exit are fraction-based
      in JS, so this just compresses them proportionally), and adds breathing
      room above it now that stats immediately follows the network/logos
      section in the page order. */
-  .stats{height:190vh;margin-top:380px}
+  .stats{height:240vh;margin-top:380px}
+
+  /* Pulls Portfolio's pin up a bit closer to the tail of Stats' exit fade,
+     tightening the dead scroll between the two. */
+  .portfolio{margin-top:-220px}
 
   /* Network: vertical stack — "Our Network" on top, the marquee (icon
      curtain-open/grow animation, unchanged) in the middle, headline +
@@ -484,7 +595,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   .network-copy .btn{display:none}
   .network-marquee{order:2}
   .network-copy-after{display:flex;flex-direction:column;gap:20px;
-    max-width:760px;margin:0 auto;align-items:center;order:3}
+    max-width:900px;margin:0 auto;align-items:center;order:3}
   .network-lead-inline{font-family:var(--sans);font-weight:800;
     font-size:clamp(38px, 2px + 2.81vw, 56px);line-height:1.15;letter-spacing:-.02em;
     color:var(--fg);margin:0;text-align:center}
@@ -507,7 +618,6 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   .wrap{padding:0 24px}
   .grid{grid-template-columns:repeat(2,1fr)}
   .team-grid{grid-template-columns:1fr;gap:60px}
-  .co-investors-grid{grid-template-columns:repeat(3,1fr)}
   .menu{padding:88px 32px 40px}
   .menu a{font-size:44px}
 }
