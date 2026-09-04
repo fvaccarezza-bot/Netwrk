@@ -265,7 +265,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 /* ---------- Mid-page lead line (between Portfolio and Team): pinned while
    the two lines fade/blur in staggered, hold, then fade/blur out together —
    same pin technique as Stats. ---------- */
-.mid-lead{position:relative;height:420vh}
+.mid-lead{position:relative;height:640vh}
 .mid-lead-pin{position:sticky;top:0;height:100vh;height:100dvh;
   display:flex;align-items:center;justify-content:center;overflow:visible}
 /* Physically oversized (script.js keeps the resting ring sizes the same by

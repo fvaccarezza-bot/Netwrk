@@ -740,7 +740,7 @@ const statsIsUW = window.matchMedia('(min-width:1920px)').matches;
 // UW: longer build-up, then a longer hold (slow parallax drift, fully
 // revealed, before anything starts leaving) than before it fades out.
 const STATS_ENTRY_END = statsIsUW ? 0.54 : 0.6; // fraction of the pin's scroll spent on the build-up
-const STATS_EXIT_START = statsIsUW ? 0.79 : 0.8; // all 3 stay fully visible until this fraction, then fade out
+const STATS_EXIT_START = statsIsUW ? 0.86 : 0.87; // all 3 stay fully visible (drifting) until this fraction, then fade out
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
@@ -1095,11 +1095,15 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
 
   const ENTRY_END = 0.38; // fraction of the text phase spent revealing both lines together
   const EXIT_START = 0.6; // both lines stay fully visible until this fraction of the text phase, then fade out together
-  // The statement + outro (entry/hold/exit/outro-in) play out exactly as
-  // before, just compressed into the first 75% of the pin's scroll — the
-  // last 25% is a new phase where the outro hands off to the two team
-  // preview cards, sliding in from opposite sides.
-  const TEXT_PHASE_END = 0.75;
+  // The statement (entry/hold/exit) plays out compressed into the first 70%
+  // of the pin's scroll. The outro then holds fully visible on its own for
+  // a stretch, fades out on its own schedule, and the team-preview cards
+  // only start entering once that fade is nearly done — a real handoff
+  // instead of a full-length crossfade.
+  const TEXT_PHASE_END = 0.7;
+  const OUTRO_HOLD_END = 0.82; // outro sits fully visible (pinned) until here
+  const OUTRO_FADE_END = 0.95; // outro fully faded out by here
+  const CARDS_START = 0.7; // wide window — takes real, deliberate scroll distance to watch them settle
   const CARD_GAP = 28; // px gap between the two cards' inner edges at rest
   const CARD_ENTER_PUSH = 320; // extra px each card starts further out and slides in from
   let ticking = false;
@@ -1113,7 +1117,8 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     const textProgress = Math.min(progress / TEXT_PHASE_END, 1);
     const entryProgress = Math.min(textProgress / ENTRY_END, 1);
     const exitProgress = smoothstep(Math.max((textProgress - EXIT_START) / (1 - EXIT_START), 0));
-    const cardsProgress = smoothstep(Math.min(Math.max((progress - TEXT_PHASE_END) / (1 - TEXT_PHASE_END), 0), 1));
+    const outroFadeOut = smoothstep(Math.min(Math.max((progress - OUTRO_HOLD_END) / (OUTRO_FADE_END - OUTRO_HOLD_END), 0), 1));
+    const cardsProgress = smoothstep(Math.min(Math.max((progress - CARDS_START) / (1 - CARDS_START), 0), 1));
     midLeadProgress = progress;
     midLeadExitProgress = exitProgress;
 
@@ -1148,12 +1153,14 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     if (outro) {
       const outroIn = smoothstep(Math.min(Math.max((exitProgress - 0.5) / 0.5, 0), 1));
       // Grows in from a bit smaller than full size — reads as emerging out
-      // of that same center point, not just fading up in place. Fades back
-      // out (and blurs again) as the preview cards take over the center.
+      // of that same center point, not just fading up in place. Holds at
+      // full size/opacity on its own, then fades/blurs back out on its own
+      // schedule (outroFadeOut) — independent of the cards, which only
+      // start entering once that fade is most of the way done.
       const outroScale = 0.72 + 0.28 * outroIn;
-      const outroBlur = Math.max((1 - outroIn) * 16, cardsProgress * 16);
+      const outroBlur = Math.max((1 - outroIn) * 16, outroFadeOut * 16);
 
-      outro.style.opacity = String(outroIn * (1 - cardsProgress));
+      outro.style.opacity = String(outroIn * (1 - outroFadeOut));
       outro.style.filter = outroBlur > 0.5 ? `blur(${outroBlur}px)` : 'none';
       outro.style.transform = `translate(-50%,-50%) scale(${outroScale})`;
     }
@@ -1272,6 +1279,25 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     };
   });
 
+  // Pre-rendered radial glow sprite for the floating nodes — drawImage-ing
+  // this per node is much cheaper than ctx.shadowBlur (a real per-pixel
+  // blur convolution redone every frame), which is what was costing FPS
+  // specifically while nodes are growing in — that's the moment the most
+  // of them are drawing a shadowBlur'd fill at once.
+  const glowSprite = document.createElement('canvas');
+  const GLOW_SIZE = 64;
+  glowSprite.width = GLOW_SIZE;
+  glowSprite.height = GLOW_SIZE;
+  const glowCtx = glowSprite.getContext('2d');
+  const glowGradient = glowCtx.createRadialGradient(
+    GLOW_SIZE / 2, GLOW_SIZE / 2, 0,
+    GLOW_SIZE / 2, GLOW_SIZE / 2, GLOW_SIZE / 2
+  );
+  glowGradient.addColorStop(0, 'rgba(255,255,255,.9)');
+  glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
+  glowCtx.fillStyle = glowGradient;
+  glowCtx.fillRect(0, 0, GLOW_SIZE, GLOW_SIZE);
+
   if (pinEl) {
     pinEl.addEventListener('mouseenter', () => {
       pulses.push({ launch: performance.now() });
@@ -1368,13 +1394,10 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(255,255,255,${Math.min(alpha, 1)})`;
         ctx.lineWidth = 1;
-        // A soft glow reads as a little lift/depth off the page, rather
-        // than a flat drawn line — no extra boost from the hover pulse
-        // itself (radius push is plenty), just from the exit zoom-fade.
-        ctx.shadowBlur = 8 + fadeT * 24;
-        ctx.shadowColor = 'rgba(255,255,255,.5)';
+        // Was ctx.shadowBlur here for a soft glow — dropped for perf
+        // (shadowBlur is a real per-pixel blur, redone on every ring, every
+        // frame; flat strokes are effectively free by comparison).
         ctx.stroke();
-        ctx.shadowBlur = 0;
       }
 
       const nodeAlpha = 0.5 * (1 - fadeT);
@@ -1419,13 +1442,15 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
           ctx.lineTo(nx, ny);
           ctx.stroke();
 
+          const nodeR = n.size * nodeGrow;
+          const glowR = nodeR * 4;
+          ctx.globalAlpha = grownAlpha * 0.85;
+          ctx.drawImage(glowSprite, nx - glowR, ny - glowR, glowR * 2, glowR * 2);
+          ctx.globalAlpha = 1;
           ctx.beginPath();
-          ctx.arc(nx, ny, n.size * nodeGrow, 0, Math.PI * 2);
+          ctx.arc(nx, ny, nodeR, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255,255,255,${grownAlpha})`;
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = 'rgba(255,255,255,.85)';
           ctx.fill();
-          ctx.shadowBlur = 0;
         });
       }
     }
