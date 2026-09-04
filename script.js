@@ -1,4 +1,24 @@
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Reduced motion: respects prefers-reduced-motion for genuine accessibility
+// needs, but allows an explicit local override for environments where the
+// OS/browser reports `reduce` without a real user preference behind it (e.g.
+// Remote Desktop sessions disable Windows animations, so Chromium reports
+// `reduce` on every RDP'd machine regardless of what the user actually wants).
+// Visit once with ?motion=on / ?motion=off to set the override; it persists
+// in localStorage. With no override set, the OS preference wins exactly as
+// before, so nothing changes for real reduced-motion users.
+function resolveReducedMotion() {
+  try {
+    const param = new URLSearchParams(location.search).get('motion');
+    if (param === 'on') localStorage.setItem('nk-motion', 'no-preference');
+    else if (param === 'off') localStorage.setItem('nk-motion', 'reduce');
+    const stored = localStorage.getItem('nk-motion');
+    if (stored === 'no-preference') return false;
+    if (stored === 'reduce') return true;
+  } catch (e) {}
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+const reduceMotion = resolveReducedMotion();
+document.body.classList.toggle('motion-on', !reduceMotion);
 // Ease-in-out for 0-1 progress ramps, so reveals/holds settle in and out
 // instead of hitting their start/end point at full speed (a linear ramp
 // looks like it gets cut off right at the boundary).
@@ -328,7 +348,7 @@ const NETWORK_LOGOS = [
   // Pre-reveal ("closed") sliver is thin everywhere the curtain trick is
   // used, so the gap before it opens doesn't read as dead space.
   const CURTAIN_HEIGHT = isRetinaBand ? 16 : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
-  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
+  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : (isUW ? logoH * 6 + 12 * 5 : 780);
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 

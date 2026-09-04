@@ -137,7 +137,7 @@ body.hero-loaded .hero .hero-sub,
 body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 
 @media (prefers-reduced-motion: reduce){
-  .hero .eyebrow,.hero .h1-bold,.hero .h1-light,.hero .hero-sub,.hero .btn{
+  body:not(.motion-on) .hero .eyebrow,body:not(.motion-on) .hero .h1-bold,body:not(.motion-on) .hero .h1-light,body:not(.motion-on) .hero .hero-sub,body:not(.motion-on) .hero .btn{
     opacity:1;filter:none;transform:none;transition:none}
 }
 
@@ -216,8 +216,8 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .grid:has(.card:hover) .card.is-visible:not(:hover){transform:translateY(0) scale(.97)}
 
 @media (prefers-reduced-motion: reduce){
-  .card,.card.is-visible:hover{opacity:1;filter:none;transform:none;transition:none}
-  .card::before{display:none}
+  body:not(.motion-on) .card,body:not(.motion-on) .card.is-visible:hover{opacity:1;filter:none;transform:none;transition:none}
+  body:not(.motion-on) .card::before{display:none}
 }
 .num{position:absolute;z-index:2;top:13px;left:14px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bdbdbd}
 .cat{position:absolute;z-index:2;bottom:13px;right:16px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bdbdbd}
@@ -257,9 +257,9 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 }
 
 @media (prefers-reduced-motion: reduce){
-  .stats{height:auto}
-  .stats-pin{position:relative;height:auto;display:flex;flex-direction:column;gap:80px;padding:120px 24px}
-  .stat{position:relative;top:auto;left:auto;width:auto;margin:0 auto;opacity:1;transform:none}
+  body:not(.motion-on) .stats{height:auto}
+  body:not(.motion-on) .stats-pin{position:relative;height:auto;display:flex;flex-direction:column;gap:80px;padding:120px 24px}
+  body:not(.motion-on) .stat{position:relative;top:auto;left:auto;width:auto;margin:0 auto;opacity:1;transform:none}
 }
 
 /* ---------- Mid-page lead line (between Portfolio and Team): pinned while
@@ -317,12 +317,12 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .mid-lead-cards .mid-lead-card-slot .team-card:hover{transform:scale(1.015) rotateX(var(--rx)) rotateY(var(--ry))}
 
 @media (prefers-reduced-motion: reduce){
-  .mid-lead{height:auto}
-  .mid-lead-pin{position:relative;height:auto;padding:120px 24px}
-  .mid-lead-light,.mid-lead-bold{opacity:1;filter:none;transform:none}
-  .mid-lead-outro{opacity:0;display:none}
-  .mid-lead-cards{opacity:0;display:none}
-  .mid-lead-pulse{display:none}
+  body:not(.motion-on) .mid-lead{height:auto}
+  body:not(.motion-on) .mid-lead-pin{position:relative;height:auto;padding:120px 24px}
+  body:not(.motion-on) .mid-lead-light,body:not(.motion-on) .mid-lead-bold{opacity:1;filter:none;transform:none}
+  body:not(.motion-on) .mid-lead-outro{opacity:0;display:none}
+  body:not(.motion-on) .mid-lead-cards{opacity:0;display:none}
+  body:not(.motion-on) .mid-lead-pulse{display:none}
 }
 
 /* ---------- Team ---------- */
@@ -355,8 +355,8 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .team-grid.is-visible .team-card:hover{transform:translateX(0) scale(1.015) rotateX(var(--rx)) rotateY(var(--ry))}
 
 @media (prefers-reduced-motion: reduce){
-  .team-card,.team-grid.is-visible .team-card:hover{opacity:1;transform:none;transition:none}
-  .team-card::before{display:none}
+  body:not(.motion-on) .team-card,body:not(.motion-on) .team-grid.is-visible .team-card:hover{opacity:1;transform:none;transition:none}
+  body:not(.motion-on) .team-card::before{display:none}
 }
 .team-photo{position:relative;z-index:1;width:clamp(176px, -72px + 19.38vw, 300px);height:clamp(176px, -72px + 19.38vw, 300px);object-fit:cover;filter:grayscale(1);flex-shrink:0}
 .team-info{position:relative;z-index:1;display:flex;flex-direction:column;align-self:stretch}
@@ -422,7 +422,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   line-height:1.7;color:var(--fg-dim);margin:clamp(12px, 4px + 0.8vw, 18px) 0 0;max-width:34ch}
 
 @media (prefers-reduced-motion: reduce){
-  .co-investors-grid{opacity:1;filter:none;transform:none;transition:none}
+  body:not(.motion-on) .co-investors-grid{opacity:1;filter:none;transform:none;transition:none}
 }
 
 /* ---------- Network: pinned while the marquee columns lengthen ---------- */
@@ -530,7 +530,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 }
 .footer-logo.is-revealed{filter:blur(0);opacity:1;transform:translateY(0)}
 @media (prefers-reduced-motion: reduce){
-  .footer-logo{filter:none;opacity:1;transform:none;transition:none}
+  body:not(.motion-on) .footer-logo{filter:none;opacity:1;transform:none;transition:none}
 }
 
 .footer-bottom{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between;
@@ -568,13 +568,22 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 /* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
   :root{--wrap:1600px}
+  body{font-size:14px}
+  .h1-bold,.h1-light{font-size:80px}
+  .network-logo{width:100px;height:100px}
+  .marquee-col{width:100px}
+  .network-pin{overflow-y:hidden}
   .num,.cat{font-size:13px}
   .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
-  /* 3 columns of 500px cards + gaps need ~1544px — the base clamp ceiling
-     (1440px) was clipping/overflowing the grid off-center. */
-  .grid{justify-items:center;max-width:1580px}
-  .card{width:500px;height:500px}
-  .card-logo{transform:scale(1.2)}
+  /* Fixed-width columns (not 1fr) so the gap between cards is the same
+     horizontally and vertically — 1fr tracks wider than the card would
+     leave extra slack on the sides on top of the gap. */
+  .grid{grid-template-columns:repeat(3,400px);justify-content:center}
+  .card{width:400px;height:375px}
+  .card-logo{transform:scale(1.26)}
+  .co-investors-grid{grid-template-columns:repeat(3,400px);justify-content:center}
+  .co-investor-card{width:400px;height:375px}
+  .eyebrow,.portfolio .section-title h2,.team .section-title h2,.co-investors .section-title h2,.co-investors-intro-eyebrow{font-size:18px}
 
   /* Shortens the stats pin's scroll runway (entry/hold/exit are fraction-based
      in JS, so this just compresses them proportionally), and adds breathing
@@ -590,19 +599,25 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
      curtain-open/grow animation, unchanged) in the middle, headline +
      subcopy at the bottom — all revealed together within the same pin. */
   .network-row{flex-direction:column;justify-content:center;align-items:center;gap:48px;text-align:center}
-  .network-copy{width:100%;max-width:100%;align-items:center;order:1}
+  .network-copy{width:100%;max-width:100%;align-items:center;order:1;margin-top:50px}
   .network-copy .eyebrow{text-align:center}
   .network-copy .btn{display:none}
   .network-marquee{order:2}
   .network-copy-after{display:flex;flex-direction:column;gap:20px;
-    max-width:900px;margin:0 auto;align-items:center;order:3}
+    max-width:900px;margin:-100px auto 0;align-items:center;order:3}
   .network-lead-inline{font-family:var(--sans);font-weight:800;
-    font-size:clamp(38px, 2px + 2.81vw, 56px);line-height:1.15;letter-spacing:-.02em;
+    font-size:48px;line-height:1.15;letter-spacing:-.02em;
     color:var(--fg);margin:0;text-align:center}
   .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
-  .network-subcopy-inline{font-family:var(--mono);font-size:18px;line-height:1.7;
+  .network-subcopy-inline{font-family:var(--mono);font-size:14px;line-height:1.7;
     color:var(--fg-dim);margin:0;text-align:center}
   .network-after{display:none}
+  .mid-lead-light,.mid-lead-bold,.mid-lead-outro,.co-investors-intro-lead{font-size:48px}
+  .co-investors-intro-copy{font-size:14px}
+  .team-photo{width:240px;height:240px}
+  .team-role,.team-bio{font-size:14px}
+  .team-grid{justify-items:center;gap:24px}
+  .team-card{max-width:calc(100% - 100px)}
 
   /* Drop the "View All" floating hover label off the logo marquee */
   .marquee-cta{display:none}
