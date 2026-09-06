@@ -226,7 +226,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   transform:scale(clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9))}
 
 /* ---------- Stats: 3 numbers build up left / middle / right, one at a time ---------- */
-.stats{position:relative;height:250vh}
+.stats{position:relative;height:320vh}
 .stats-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;padding:0 60px}
 .stats-nodes{position:absolute;top:50%;left:50%;width:min(1440px,95%);height:min(720px,80%);
   transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:.7;
@@ -568,28 +568,19 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 /* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
   :root{--wrap:1600px}
-  body{font-size:14px}
-  .h1-bold,.h1-light{font-size:80px}
-  .network-logo{width:100px;height:100px}
-  .marquee-col{width:100px}
-  .network-pin{overflow-y:hidden}
   .num,.cat{font-size:13px}
   .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
-  /* Fixed-width columns (not 1fr) so the gap between cards is the same
-     horizontally and vertically — 1fr tracks wider than the card would
-     leave extra slack on the sides on top of the gap. */
-  .grid{grid-template-columns:repeat(3,400px);justify-content:center}
-  .card{width:400px;height:375px}
-  .card-logo{transform:scale(1.26)}
-  .co-investors-grid{grid-template-columns:repeat(3,400px);justify-content:center}
-  .co-investor-card{width:400px;height:375px}
-  .eyebrow,.portfolio .section-title h2,.team .section-title h2,.co-investors .section-title h2,.co-investors-intro-eyebrow{font-size:18px}
+  /* 3 columns of 500px cards + gaps need ~1544px — the base clamp ceiling
+     (1440px) was clipping/overflowing the grid off-center. */
+  .grid{justify-items:center;max-width:1580px}
+  .card{width:500px;height:500px}
+  .card-logo{transform:scale(1.2)}
 
   /* Shortens the stats pin's scroll runway (entry/hold/exit are fraction-based
      in JS, so this just compresses them proportionally), and adds breathing
      room above it now that stats immediately follows the network/logos
      section in the page order. */
-  .stats{height:240vh;margin-top:380px}
+  .stats{height:300vh;margin-top:380px}
 
   /* Pulls Portfolio's pin up a bit closer to the tail of Stats' exit fade,
      tightening the dead scroll between the two. */
@@ -604,20 +595,14 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   .network-copy .btn{display:none}
   .network-marquee{order:2}
   .network-copy-after{display:flex;flex-direction:column;gap:20px;
-    max-width:900px;margin:-100px auto 0;align-items:center;order:3}
+    max-width:900px;margin:-50px auto 0;align-items:center;order:3}
   .network-lead-inline{font-family:var(--sans);font-weight:800;
-    font-size:48px;line-height:1.15;letter-spacing:-.02em;
+    font-size:clamp(38px, 2px + 2.81vw, 56px);line-height:1.15;letter-spacing:-.02em;
     color:var(--fg);margin:0;text-align:center}
   .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
-  .network-subcopy-inline{font-family:var(--mono);font-size:14px;line-height:1.7;
+  .network-subcopy-inline{font-family:var(--mono);font-size:18px;line-height:1.7;
     color:var(--fg-dim);margin:0;text-align:center}
   .network-after{display:none}
-  .mid-lead-light,.mid-lead-bold,.mid-lead-outro,.co-investors-intro-lead{font-size:48px}
-  .co-investors-intro-copy{font-size:14px}
-  .team-photo{width:240px;height:240px}
-  .team-role,.team-bio{font-size:14px}
-  .team-grid{justify-items:center;gap:24px}
-  .team-card{max-width:calc(100% - 100px)}
 
   /* Drop the "View All" floating hover label off the logo marquee */
   .marquee-cta{display:none}

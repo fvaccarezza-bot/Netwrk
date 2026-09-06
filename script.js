@@ -348,7 +348,7 @@ const NETWORK_LOGOS = [
   // Pre-reveal ("closed") sliver is thin everywhere the curtain trick is
   // used, so the gap before it opens doesn't read as dead space.
   const CURTAIN_HEIGHT = isRetinaBand ? 16 : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
-  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : (isUW ? logoH * 6 + 12 * 5 : 780);
+  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 
@@ -438,6 +438,12 @@ const NETWORK_LOGOS = [
   const LOAD_IN_MS = 1400; // node field itself fades in on page load, alongside the text
   const WAVE_SPAN = 1000; // ms for the reveal wave to sweep from center to the furthest node
   const NODE_FADE = 450; // ms for one node's own fade/grow-in once the wave reaches it
+  const ENTRANCE_GLOW_DECAY_MS = 900; // once a node finishes growing in, its glow fades out over this long
+  const PULSE_INTERVAL = 4000; // ms between recurring ripples through the field
+  const PULSE_SWEEP_MS = 1800; // ms for one ripple to sweep from center to the furthest node — slow
+  const PULSE_KICK = 0.55; // outward velocity nudge a node gets once the ripple reaches it
+  const PULSE_LEAD_MS = 250; // fires this much before the entrance reveal fully finishes
+  let maxNodeDist = 1; // set once in makeNodes, reused every frame for the ripple's timing
 
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
   const loadStart = performance.now();
@@ -498,7 +504,14 @@ const NETWORK_LOGOS = [
         n.dist = Math.hypot(n.homeX - cx, n.homeY - cy);
         if (n.dist > maxDist) maxDist = n.dist;
       });
-      nodes.forEach(n => { n.waveDelay = (n.dist / maxDist) * WAVE_SPAN; });
+      maxNodeDist = maxDist;
+      nodes.forEach(n => {
+        n.waveDelay = (n.dist / maxDist) * WAVE_SPAN;
+        n.lastPulseCycle = -1;
+        // Recurring ripple sweeps left to right (by x position), independent
+        // of the center-out entrance wave above.
+        n.pulseFrac = n.homeX / w;
+      });
     }
   };
 
@@ -522,19 +535,26 @@ const NETWORK_LOGOS = [
   };
 
   const drawNodes = () => {
+    const entranceNow = performance.now() - loadStart;
     nodes.forEach(n => {
       if (n.reveal <= 0) return;
-      // Subtle grow-in alongside the fade, not just an alpha snap.
-      let size = n.size * (0.4 + 0.6 * n.reveal);
+      // Grows from nothing (not just a subtle size bump) alongside the fade.
+      let size = n.size * n.reveal;
       let alpha = 0.85 * n.reveal;
       let glow = 0;
+      // Glows while it's still actively growing in, then that glow fades
+      // back out over ENTRANCE_GLOW_DECAY_MS once it's settled — makes the
+      // load-in itself the notable moment, not just a size/alpha ramp.
+      const settleElapsed = entranceNow - n.waveDelay - NODE_FADE;
+      const entranceGlow = smoothstep(Math.min(Math.max(1 - settleElapsed / ENTRANCE_GLOW_DECAY_MS, 0), 1));
+      if (entranceGlow > glow) glow = entranceGlow;
       if (mouse.active) {
         const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
         if (dist < CURSOR_LINK_DIST) {
           const boost = 1 - dist / CURSOR_LINK_DIST;
           size += boost * 1.5;
           alpha = Math.min(1, alpha + boost * 0.3);
-          glow = boost;
+          if (boost > glow) glow = boost;
         }
       }
       ctx.beginPath();
@@ -588,7 +608,31 @@ const NETWORK_LOGOS = [
       cursorNode.y += (mouse.y - cursorNode.y) * 0.14;
     }
 
+    // Recurring ripple: every PULSE_INTERVAL, a wave sweeps left to right
+    // across the field (by x position, not distance from center) — each
+    // node gets a single small outward velocity kick exactly once, the
+    // moment the ripple reaches it. The existing spring pull + damping
+    // below carries it back out and home on its own, so this only needs to
+    // nudge, not animate, the motion. Clocked off the reveal finishing (not
+    // raw page-load time), so the very first ripple fires right as the
+    // node field's own entrance wave completes, not mid-way through it.
+    const pulseClock = Math.max(0, elapsed - (WAVE_SPAN + NODE_FADE - PULSE_LEAD_MS));
+    const pulseCycle = Math.floor(pulseClock / PULSE_INTERVAL);
+    const pulseElapsed = pulseClock % PULSE_INTERVAL;
+    const cx = w / 2, cy = h / 2;
+
     nodes.forEach(n => {
+      if (elapsed >= WAVE_SPAN + NODE_FADE - PULSE_LEAD_MS && n.lastPulseCycle !== pulseCycle) {
+        const arrival = n.pulseFrac * PULSE_SWEEP_MS;
+        if (pulseElapsed >= arrival) {
+          n.lastPulseCycle = pulseCycle;
+          const dx = n.homeX - cx, dy = n.homeY - cy;
+          const d = Math.hypot(dx, dy) || 1;
+          n.vx += (dx / d) * PULSE_KICK;
+          n.vy += (dy / d) * PULSE_KICK;
+        }
+      }
+
       // Spring pull back toward the node's home position instead of
       // bouncing off the canvas edges — keeps the motion a self-contained
       // loop/orbit so the network's overall shape never drifts apart.
@@ -760,7 +804,7 @@ const statsIsUW = window.matchMedia('(min-width:1920px)').matches;
 // UW: longer build-up, then a longer hold (slow parallax drift, fully
 // revealed, before anything starts leaving) than before it fades out.
 const STATS_ENTRY_END = statsIsUW ? 0.54 : 0.6; // fraction of the pin's scroll spent on the build-up
-const STATS_EXIT_START = statsIsUW ? 0.86 : 0.87; // all 3 stay fully visible (drifting) until this fraction, then fade out
+const STATS_EXIT_START = statsIsUW ? 0.78 : 0.79; // all 3 stay fully visible (drifting) until this fraction, then fade out — a wider window here, plus the taller pin below, gives the fade itself real scroll distance instead of rushing by
 let statsProgress = 0; // shared with the node-field background below
 let statsExitProgress = 0; // shared with the node-field background below
 
