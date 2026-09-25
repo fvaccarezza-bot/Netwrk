@@ -41,6 +41,7 @@ if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
   dot.className = 'cursor-dot';
   const ring = document.createElement('div');
   ring.className = 'cursor-ring';
+  ring.innerHTML = '<span>View all</span>';
   document.body.appendChild(dot);
   document.body.appendChild(ring);
 
@@ -217,6 +218,24 @@ const NETWORK_LOGOS = [
   { src: 'images/network-logo/uta.png', alt: 'UTA' },
 ];
 
+// All-logos page: one 200px tile per network logo.
+(() => {
+  const gridEl = document.querySelector('[data-logo-grid]');
+  if (!gridEl) return;
+  NETWORK_LOGOS.forEach((logo, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'logo-tile';
+    const img = document.createElement('img');
+    img.src = logo.src;
+    img.alt = logo.alt;
+    img.loading = 'lazy';
+    tile.appendChild(img);
+    gridEl.appendChild(tile);
+    tile.style.setProperty('--d', (0.45 + Math.min(i, 40) * 0.045) + 's');
+    requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('is-in')));
+  });
+})();
+
 (() => {
   const marqueeEl = document.querySelector('[data-network-marquee]');
   if (!marqueeEl || !NETWORK_LOGOS.length) return;
@@ -279,17 +298,23 @@ const NETWORK_LOGOS = [
   // Floating "View All" label that trails the cursor while hovering the
   // logo grid — purely decorative (pointer-events:none) so it never steals
   // the hover/click that the grid itself now handles as the click target.
-  const marqueeCta = document.createElement('div');
-  marqueeCta.className = 'marquee-cta';
-  marqueeCta.innerHTML = '<span>View</span><span>All +</span>';
-  document.body.appendChild(marqueeCta);
-
-  marqueeEl.addEventListener('mousemove', (e) => {
-    marqueeCta.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+  const cursorRing = document.querySelector('.cursor-ring');
+  if (cursorRing) {
+    marqueeEl.addEventListener('mouseenter', () => { cursorRing.classList.add('is-cta'); });
+    marqueeEl.addEventListener('mouseleave', () => { cursorRing.classList.remove('is-cta'); });
+  }
+  marqueeEl.addEventListener('click', (e) => {
+    const go = () => { window.location.href = 'network-partners.html'; };
+    if (reduceMotion) return go();
+    try { sessionStorage.setItem('pt-enter', '1'); } catch (_) {}
+    const ov = document.createElement('div');
+    ov.className = 'pt-overlay';
+    ov.style.setProperty('--x', e.clientX + 'px');
+    ov.style.setProperty('--y', e.clientY + 'px');
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('is-on')));
+    setTimeout(go, 800);
   });
-  marqueeEl.addEventListener('mouseenter', () => { marqueeCta.classList.add('is-visible'); });
-  marqueeEl.addEventListener('mouseleave', () => { marqueeCta.classList.remove('is-visible'); });
-  marqueeEl.addEventListener('click', () => { window.location.href = 'network-partners.html'; });
 
   if (reduceMotion) return;
 
@@ -1539,6 +1564,15 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   requestAnimationFrame(draw);
 })();
 
+// Portfolio carousel: cards move into an inner track that's moved by
+// transform (not native scroll) — see the carousel block further down.
+document.querySelectorAll('[data-carousel]').forEach(viewport => {
+  const inner = document.createElement('div');
+  inner.className = 'grid-track';
+  [...viewport.children].forEach(card => inner.appendChild(card));
+  viewport.appendChild(inner);
+});
+
 // Portfolio cards: cursor glow + very soft tilt, both trailing with an eased delay
 const CARD_MAX_TILT = 3; // degrees
 
@@ -1632,11 +1666,13 @@ const coInvestorsGrid = document.querySelector('.co-investors-grid');
 if (coInvestorsGrid) {
   if (reduceMotion) {
     coInvestorsGrid.classList.add('is-visible');
+    document.querySelectorAll('.co-investors-intro').forEach(el => el.classList.add('is-visible'));
   } else {
     const coInvestorsIo = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           coInvestorsGrid.classList.add('is-visible');
+          document.querySelectorAll('.co-investors-intro').forEach(el => el.classList.add('is-visible'));
           coInvestorsIo.disconnect();
         }
       });
@@ -1644,3 +1680,124 @@ if (coInvestorsGrid) {
     coInvestorsIo.observe(coInvestorsGrid);
   }
 }
+
+// Arriving from the home "View all" transition: the cover (html.pt-enter,
+// set in <head>) fades out once the page is ready.
+if (document.documentElement.classList.contains('pt-enter')) {
+  const done = () => requestAnimationFrame(() => document.documentElement.classList.add('pt-reveal'));
+  if (document.readyState === 'complete') done(); else window.addEventListener('load', done);
+}
+
+// Portfolio carousel: drifts on its own, bouncing between the two ends (no
+// loop). Both the first and last card can be brought to the center. Grab it
+// and it follows the pointer 1:1 (rubber-band past the ends); let go and it
+// keeps the momentum of the throw, then eases back into the slow drift.
+// Position is a float applied via transform, so motion stays subpixel-smooth.
+(() => {
+  const viewport = document.querySelector('[data-carousel]');
+  const track = viewport && viewport.querySelector('.grid-track');
+  if (!track) return;
+  const DRIFT = 38;       // px/sec idle drift
+  const EASE_BACK = 1.6;  // how quickly momentum settles back to the drift
+  const cards = track.querySelectorAll('.card');
+  // Range of `pos` (px the track is shifted left): first card at the left
+  // edge of the grid ... last card at the right edge (no centering).
+  const bounds = () => {
+    return { min: 0, max: Math.max(0, track.scrollWidth - viewport.clientWidth) };
+  };
+
+  let { min, max } = bounds();
+  let pos = min, vel = 0, dir = 1;
+  let grabbing = false, startX = 0, startPos = 0, lastX = 0, lastT = 0;
+  const RUBBER = 0.35;
+
+  // Visual position indicator: a hairline with a thumb that slides from one
+  // end to the other as the carousel moves.
+  const ind = document.createElement('div');
+  ind.className = 'carousel-ind';
+  ind.setAttribute('aria-hidden', 'true');
+  const thumb = document.createElement('i');
+  ind.appendChild(thumb);
+  viewport.parentElement.appendChild(ind);
+
+  const render = () => {
+    track.style.transform = `translate3d(${-pos}px,0,0)`;
+    const share = Math.min(1, viewport.clientWidth / track.scrollWidth);
+    const f = max > min ? Math.max(0, Math.min(1, (pos - min) / (max - min))) : 0;
+    ind.style.setProperty('--tw', (share * 100).toFixed(2) + '%');
+    thumb.style.setProperty('--f', f.toFixed(4));
+  };
+
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    grabbing = true;
+    viewport.classList.add('is-dragging');
+    viewport.setPointerCapture(e.pointerId);
+    startX = lastX = e.clientX;
+    startPos = pos;
+    lastT = performance.now();
+    vel = 0;
+  });
+  viewport.addEventListener('pointermove', (e) => {
+    if (!grabbing) return;
+    const now = performance.now();
+    const dt = (now - lastT) / 1000;
+    let p = startPos - (e.clientX - startX);
+    if (p < min) p = min - (min - p) * RUBBER;
+    else if (p > max) p = max + (p - max) * RUBBER;
+    pos = p;
+    if (dt > 0) vel = vel * 0.5 + (-(e.clientX - lastX) / dt) * 0.5;
+    lastX = e.clientX; lastT = now;
+    render();
+  });
+  const drop = () => {
+    if (!grabbing) return;
+    grabbing = false;
+    viewport.classList.remove('is-dragging');
+    if (performance.now() - lastT > 90) vel = 0; // held still before letting go
+    vel = Math.max(-4000, Math.min(4000, vel));
+    if (reduceMotion) { vel = 0; pos = Math.max(min, Math.min(max, pos)); render(); }
+    else if (Math.abs(vel) > 20) dir = vel > 0 ? 1 : -1;
+  };
+  viewport.addEventListener('pointerup', drop);
+  viewport.addEventListener('pointercancel', drop);
+
+  // Horizontal trackpad / shift-wheel pushes it too.
+  viewport.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    if (reduceMotion) { pos = Math.max(min, Math.min(max, pos + e.deltaX)); render(); }
+    else vel = e.deltaX * 30;
+  }, { passive: false });
+
+  window.addEventListener('resize', () => {
+    ({ min, max } = bounds());
+    pos = Math.max(min, Math.min(max, pos));
+    render();
+  });
+  render();
+  if (reduceMotion) return;
+
+  let visible = true;
+  new IntersectionObserver((en) => { visible = en[0].isIntersecting; }).observe(viewport);
+  let last = performance.now();
+  const loop = (now) => {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (visible && !grabbing) {
+      const over = pos < min ? pos - min : (pos > max ? pos - max : 0);
+      if (over) {
+        // Past an end: spring back in.
+        vel += (-over * 90 - vel * 11) * dt;
+      } else {
+        if (pos >= max - 1) dir = -1;
+        else if (pos <= min + 1) dir = 1;
+        vel += (dir * DRIFT - vel) * (1 - Math.exp(-EASE_BACK * dt));
+      }
+      pos += vel * dt;
+      render();
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+})();
