@@ -175,8 +175,9 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .about-copy .word{opacity:.25;filter:blur(6px)}
 
 /* ---------- Portfolio ---------- */
-.portfolio{position:relative}
-.portfolio-pin{display:flex;flex-direction:column;justify-content:center;
+.portfolio{position:relative;height:280vh}
+.portfolio-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
   padding:clamp(96px, -32px + 10vw, 160px) 0 clamp(48px, -16px + 5vw, 80px)}
 .section-title{display:flex;align-items:center;justify-content:center;margin-bottom:clamp(28px, -4px + 2.5vw, 44px)}
 .section-title h2{margin:0;font-size:clamp(38px, 14px + 1.88vw, 50px);font-weight:400;letter-spacing:-.02em}
@@ -482,6 +483,8 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .network-logo{position:relative;width:135px;height:135px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;
   background:var(--bg-soft)}
 .network-logo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.network-logo-text span{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--fg-dim);text-align:center;line-height:1.4}
 /* Same corner-bracket frame as the portfolio cards — purely visual, no
    hover behavior (no brightening, no glow, no scale). */
 .network-logo::after{content:'';position:absolute;inset:0;pointer-events:none;
@@ -609,7 +612,19 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 @media (min-width:1920px){
   :root{--wrap:1600px}
   .network-pin{overflow-y:hidden}
-  .num,.cat{font-size:13px}
+  .network-logo{width:130px;height:130px}
+  .marquee-col{width:130px}
+  .num,.cat{font-size:14px}
+  body{font-size:14px}
+  .h1-bold,.h1-light{font-size:85px}
+  .eyebrow,.co-investors-intro-eyebrow,.portfolio .section-title h2,.team .section-title h2,.co-investors .section-title h2,.stats-title h2{font-size:17px}
+  .mid-lead-light,.mid-lead-bold,.mid-lead-outro{font-size:48px}
+  .co-investors-intro-lead{font-size:48px}
+  .co-investors{padding-top:60px;padding-bottom:60px}
+  .team-photo{width:250px;height:250px}
+  .team-card{max-width:560px;padding:28px;gap:20px}
+  .team-name{font-size:24px}
+  .team-role,.team-bio{font-size:14px}
   .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
   /* 3 columns of 500px cards + gaps need ~1544px — the base clamp ceiling
      (1440px) was clipping/overflowing the grid off-center. */
@@ -630,18 +645,22 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   /* Network: vertical stack — "Our Network" on top, the marquee (icon
      curtain-open/grow animation, unchanged) in the middle, headline +
      subcopy at the bottom — all revealed together within the same pin. */
-  .network-row{flex-direction:column;justify-content:center;align-items:center;gap:48px;text-align:center}
-  .network-copy{width:100%;max-width:100%;align-items:center;order:1;margin-top:50px}
+  .network-row{flex-direction:column;justify-content:center;align-items:center;gap:32px;text-align:center}
+  .network-copy{width:100%;max-width:100%;align-items:center;order:1;margin-top:20px}
   .network-copy .eyebrow{text-align:center}
   .network-copy .btn{display:none}
   .network-marquee{order:2}
   .network-copy-after{display:flex;flex-direction:column;gap:20px;
-    max-width:900px;margin:-50px auto 0;align-items:center;order:3}
+    max-width:900px;margin:-20px auto 0;align-items:center;order:3}
   .network-lead-inline{font-family:var(--sans);font-weight:800;
-    font-size:clamp(38px, 2px + 2.81vw, 56px);line-height:1.15;letter-spacing:-.02em;
+    font-size:48px;line-height:1.15;letter-spacing:-.02em;
     color:var(--fg);margin:0;text-align:center}
   .network-lead-inline .lead-light{font-weight:300;color:#eaeaea}
-  .network-subcopy-inline{font-family:var(--mono);font-size:18px;line-height:1.7;
+  .stat-desc,.co-investors-intro-copy{font-size:16px}
+  .logo-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+  .hero-sub{font-size:16px}
+  .about-copy{font-size:18px}
+  .network-subcopy-inline{font-family:var(--mono);font-size:14px;line-height:1.7;
     color:var(--fg-dim);margin:0;text-align:center}
   .network-after{display:none}
 

@@ -216,6 +216,28 @@ const NETWORK_LOGOS = [
   { src: 'images/our-network-logos/reddit.png', alt: 'Reddit' },
   { src: 'images/our-network-logos/salesforce.png', alt: 'Salesforce' },
   { src: 'images/our-network-logos/hulu.png', alt: 'Hulu' },
+  { src: 'images/our-network-logos/ford.png', alt: 'Ford' },
+  { src: 'images/our-network-logos/toyota.png', alt: 'Toyota' },
+  { src: 'images/our-network-logos/delta.png', alt: 'Delta Air Lines' },
+  { src: 'images/our-network-logos/walmart.png', alt: 'Walmart' },
+  { src: 'images/our-network-logos/adobe.png', alt: 'Adobe' },
+  { src: 'images/our-network-logos/verkada.png', alt: 'Verkada' },
+  { src: 'images/our-network-logos/formula1.png', alt: 'Formula 1' },
+  // Color logo pending — text placeholder for now.
+  { alt: "Lowe's" },
+  { alt: 'Planet Fitness' },
+  { src: 'images/our-network-logos/intuit.png', alt: 'Intuit' },
+  { alt: 'PrizePicks' },
+  { src: 'images/our-network-logos/moonpay.png', alt: 'MoonPay' },
+  { src: 'images/our-network-logos/mars.png', alt: 'Mars Inc.' },
+  { src: 'images/our-network-logos/hard-rock.png', alt: 'Hard Rock International' },
+  { src: 'images/our-network-logos/celsius.png', alt: 'Celsius' },
+  { src: 'images/our-network-logos/abbvie.png', alt: 'AbbVie' },
+  { alt: "Mike's Hot Honey" },
+  { src: 'images/our-network-logos/champion.png', alt: 'Champion' },
+  { src: 'images/our-network-logos/burger-king.png', alt: 'Burger King' },
+  { src: 'images/our-network-logos/reebok.png', alt: 'Reebok' },
+  { src: 'images/our-network-logos/ufc.png', alt: 'UFC' },
 ];
 
 // All-logos page: full network roster, one 200px tile per logo.
@@ -223,9 +245,9 @@ const NETWORK_LOGOS = [
 // additional sourced logo — used only by network-partners.html.
 // Alphabetical by company name — this array drives the "View All" grid.
 const ALL_NETWORK_LOGOS = [
-  { src: 'images/our-network-logos/abbvie.png', alt: 'AbbVie' },
+  { src: 'images/our-network-logos/abbvie-white.png', alt: 'AbbVie' },
   { src: 'images/our-network-logos/adidas-white.png', alt: 'Adidas' },
-  { src: 'images/our-network-logos/adobe.png', alt: 'Adobe' },
+  { src: 'images/our-network-logos/adobe-white.png', alt: 'Adobe' },
   { src: 'images/our-network-logos/alo-yoga.png', alt: 'Alo Yoga' },
   { src: 'images/our-network-logos/amex-white.png', alt: 'American Express' },
   { src: 'images/our-network-logos/anduril.png', alt: 'Anduril' },
@@ -237,55 +259,55 @@ const ALL_NETWORK_LOGOS = [
   { src: 'images/our-network-logos/betr.png', alt: 'Betr' },
   { src: 'images/our-network-logos/billabong.png', alt: 'Billabong' },
   { src: 'images/our-network-logos/brooks-brothers.png', alt: 'Brooks Brothers' },
-  { src: 'images/our-network-logos/burger-king.png', alt: 'Burger King' },
+  { src: 'images/our-network-logos/burger-king-white.png', alt: 'Burger King' },
   { src: 'images/our-network-logos/caa-white.png', alt: 'CAA' },
   { src: 'images/our-network-logos/caesars-white.png', alt: 'Caesars' },
-  { src: 'images/our-network-logos/celsius.png', alt: 'Celsius' },
-  { src: 'images/our-network-logos/champion.png', alt: 'Champion' },
+  { src: 'images/our-network-logos/celsius-white.png', alt: 'Celsius' },
+  { src: 'images/our-network-logos/champion-white.png', alt: 'Champion' },
   { src: 'images/our-network-logos/coca-cola-white.png', alt: 'Coca-Cola' },
   { src: 'images/our-network-logos/cox-white.png', alt: 'Cox Enterprises' },
   { src: 'images/our-network-logos/dc-shoes.png', alt: 'DC Shoes' },
-  { src: 'images/our-network-logos/delta.png', alt: 'Delta Air Lines' },
+  { src: 'images/our-network-logos/delta-white.png', alt: 'Delta Air Lines' },
   { src: 'images/our-network-logos/dicks.png', alt: "DICK'S Sporting Goods" },
-  { alt: 'Discovery Land Company' },
+  { src: 'images/our-network-logos/discovery.png', alt: 'Discovery Land Company' },
   { src: 'images/our-network-logos/disney-white.png', alt: 'Disney' },
   { src: 'images/our-network-logos/douglas-white.png', alt: 'Douglas Elliman' },
   { src: 'images/our-network-logos/e11even.png', alt: 'E11EVEN' },
   { src: 'images/our-network-logos/eddie-bauer.png', alt: 'Eddie Bauer' },
-  { alt: 'Erebor' },
+  { src: 'images/our-network-logos/erebor.png', alt: 'Erebor' },
   { src: 'images/our-network-logos/erewhon.png', alt: 'Erewhon' },
   { src: 'images/our-network-logos/fanatics-white.png', alt: 'Fanatics' },
-  { alt: 'Fishwife' },
+  { src: 'images/our-network-logos/fishwife.png', alt: 'Fishwife' },
   { src: 'images/our-network-logos/fisker.png', alt: 'Fisker' },
-  { src: 'images/our-network-logos/ford.png', alt: 'Ford' },
-  { src: 'images/our-network-logos/formula1.png', alt: 'Formula 1' },
-  { alt: 'Fruitist' },
-  { alt: 'Gecko Robotics' },
+  { src: 'images/our-network-logos/ford-white.png', alt: 'Ford' },
+  { src: 'images/our-network-logos/formula1-white.png', alt: 'Formula 1' },
+  { src: 'images/our-network-logos/fruitist.png', alt: 'Fruitist' },
+  { src: 'images/our-network-logos/gecko.png', alt: 'Gecko Robotics' },
   { src: 'images/our-network-logos/goldenhipo.png', alt: 'Golden Hippo' },
   { src: 'images/our-network-logos/green.png', alt: 'Green Mountain Coffee Roasters' },
   { src: 'images/our-network-logos/groot-white.png', alt: 'Groot Hospitality' },
   { src: 'images/our-network-logos/guess.png', alt: 'GUESS' },
-  { alt: 'Gusto' },
-  { src: 'images/our-network-logos/hard-rock.png', alt: 'Hard Rock International' },
+  { src: 'images/our-network-logos/gusto-white.png', alt: 'Gusto' },
+  { src: 'images/our-network-logos/hard-rock-white.png', alt: 'Hard Rock International' },
   { src: 'images/our-network-logos/houlihan-white.png', alt: 'Houlihan Lokey' },
   { src: 'images/our-network-logos/hulu-white.png', alt: 'Hulu' },
-  { src: 'images/our-network-logos/intuit.png', alt: 'Intuit' },
+  { src: 'images/our-network-logos/intuit-white.png', alt: 'Intuit' },
   { src: 'images/our-network-logos/jersey-mikes.png', alt: "Jersey Mike's" },
-  { alt: "Kay Jewelers" },
+  { src: 'images/our-network-logos/kay.png', alt: "Kay Jewelers" },
   { src: 'images/our-network-logos/keurig-white.png', alt: 'Keurig' },
   { src: 'images/our-network-logos/kith.png', alt: 'KITH' },
   { src: 'images/our-network-logos/lexus.png', alt: 'Lexus' },
-  { alt: 'Lightning Labs' },
+  { src: 'images/our-network-logos/lightning.png', alt: 'Lightning Labs' },
   { src: 'images/our-network-logos/liv.png', alt: 'LIV Golf' },
   { src: 'images/our-network-logos/live-nation-white.png', alt: 'Live Nation' },
   { src: 'images/our-network-logos/lowes.png', alt: "Lowe's" },
   { src: 'images/our-network-logos/lucky-brand.png', alt: 'Lucky Brand' },
   { src: 'images/our-network-logos/lucky-strike.png', alt: 'Lucky Strike Entertainment' },
-  { src: 'images/our-network-logos/mars.png', alt: 'Mars Inc.' },
+  { src: 'images/our-network-logos/mars-white.png', alt: 'Mars Inc.' },
   { src: 'images/our-network-logos/mikes-hot-honey.png', alt: "Mike's Hot Honey" },
   { src: 'images/our-network-logos/mlb-white.png', alt: 'MLB' },
-  { src: 'images/our-network-logos/moonpay.png', alt: 'MoonPay' },
-  { alt: 'Nautica' },
+  { src: 'images/our-network-logos/moonpay-white.png', alt: 'MoonPay' },
+  { src: 'images/our-network-logos/nautica.png', alt: 'Nautica' },
   { src: 'images/our-network-logos/nba-white.png', alt: 'NBA' },
   { src: 'images/our-network-logos/neiman-marcus.png', alt: 'Neiman Marcus' },
   { src: 'images/our-network-logos/netflix-white.png', alt: 'Netflix' },
@@ -298,37 +320,37 @@ const ALL_NETWORK_LOGOS = [
   { src: 'images/our-network-logos/omnicom.png', alt: 'Omnicom' },
   { src: 'images/our-network-logos/openai.png', alt: 'OpenAI' },
   { src: 'images/our-network-logos/palantir.png', alt: 'Palantir' },
-  { alt: 'Palm Tree Crew' },
-  { alt: 'Peregrine Technologies' },
+  { src: 'images/our-network-logos/ptc.png', alt: 'Palm Tree Crew' },
+  { src: 'images/our-network-logos/peregrine.png', alt: 'Peregrine Technologies' },
   { src: 'images/our-network-logos/planet-fitness.png', alt: 'Planet Fitness' },
   { src: 'images/our-network-logos/pnc-white.png', alt: 'PNC' },
   { src: 'images/our-network-logos/prime-white.png', alt: 'PRIME' },
   { src: 'images/our-network-logos/prizepicks.png', alt: 'PrizePicks' },
   { src: 'images/our-network-logos/quiksilver.png', alt: 'Quiksilver' },
   { src: 'images/our-network-logos/reddit-white.png', alt: 'Reddit' },
-  { src: 'images/our-network-logos/reebok.png', alt: 'Reebok' },
+  { src: 'images/our-network-logos/reebok-white.png', alt: 'Reebok' },
   { src: 'images/our-network-logos/ripple-white.png', alt: 'Ripple' },
   { src: 'images/our-network-logos/rolling-white.png', alt: 'Rolling Loud' },
   { src: 'images/our-network-logos/rvca.png', alt: 'RVCA' },
   { src: 'images/our-network-logos/saks.png', alt: 'Saks Global' },
   { src: 'images/our-network-logos/salesforce-white.png', alt: 'Salesforce' },
-  { alt: 'Science Corp.' },
+  { src: 'images/our-network-logos/science.png', alt: 'Science Corp.' },
   { src: 'images/our-network-logos/skechers-white.png', alt: 'Skechers' },
   { src: 'images/our-network-logos/sothebys.png', alt: "Sotheby's" },
   { src: 'images/our-network-logos/spacex-white.png', alt: 'SpaceX' },
   { src: 'images/our-network-logos/spotify-white.png', alt: 'Spotify' },
-  { alt: 'Superpower' },
+  { src: 'images/our-network-logos/superpower.png', alt: 'Superpower' },
   { src: 'images/our-network-logos/tesla-white.png', alt: 'Tesla' },
   { src: 'images/our-network-logos/hwood-white.png', alt: 'The h.wood Group' },
-  { src: 'images/our-network-logos/toyota.png', alt: 'Toyota' },
-  { src: 'images/our-network-logos/ufc.png', alt: 'UFC' },
+  { src: 'images/our-network-logos/toyota-white.png', alt: 'Toyota' },
+  { src: 'images/our-network-logos/ufc-white.png', alt: 'UFC' },
   { src: 'images/our-network-logos/umg.png', alt: 'Universal Music Group' },
   { src: 'images/our-network-logos/uta-white.png', alt: 'UTA' },
-  { src: 'images/our-network-logos/verkada.png', alt: 'Verkada' },
-  { alt: 'Vince' },
-  { alt: 'Vince Camuto' },
+  { src: 'images/our-network-logos/verkada-white.png', alt: 'Verkada' },
+  { src: 'images/our-network-logos/vince.png', alt: 'Vince' },
+  { src: 'images/our-network-logos/vincecamuto.png', alt: 'Vince Camuto' },
   { src: 'images/our-network-logos/volcom.png', alt: 'Volcom' },
-  { src: 'images/our-network-logos/walmart.png', alt: 'Walmart' },
+  { src: 'images/our-network-logos/walmart-white.png', alt: 'Walmart' },
   { src: 'images/our-network-logos/wme.png', alt: 'WME' },
 ];
 
@@ -392,11 +414,18 @@ const ALL_NETWORK_LOGOS = [
     [...sequence, ...sequence].forEach(logo => {
       const item = document.createElement('span');
       item.className = 'network-logo';
-      const img = document.createElement('img');
-      img.src = logo.src;
-      img.alt = logo.alt;
-      img.loading = 'lazy';
-      item.appendChild(img);
+      if (logo.src) {
+        const img = document.createElement('img');
+        img.src = logo.src;
+        img.alt = logo.alt;
+        img.loading = 'lazy';
+        item.appendChild(img);
+      } else {
+        item.classList.add('network-logo-text');
+        const span = document.createElement('span');
+        span.textContent = logo.alt;
+        item.appendChild(span);
+      }
       track.appendChild(item);
     });
 
@@ -485,7 +514,15 @@ const ALL_NETWORK_LOGOS = [
   // Pre-reveal ("closed") sliver is thin everywhere the curtain trick is
   // used, so the gap before it opens doesn't read as dead space.
   const CURTAIN_HEIGHT = isRetinaBand ? 16 : (isUW ? 16 : 120); // one row, opened via clip-path so logos never get squashed
-  const HEIGHT_END = isRetinaBand ? logoH * 4 + 12 * 3 : 780;
+  // Rows shown are capped to the smallest column's actual unique-logo count
+  // (round-robin split, so that's floor(total/COLS)) — never more than that,
+  // so no column can ever show the same logo twice at once, regardless of
+  // how many logos NETWORK_LOGOS ends up with.
+  const MARQUEE_COLS = isRetinaBand ? 9 : (isUW ? 10 : 4);
+  const minGroupSize = Math.max(1, Math.floor(NETWORK_LOGOS.length / MARQUEE_COLS));
+  const desiredRows = isRetinaBand ? 4 : (isUW ? 4 : 6.5); // 6.5 ≈ 780/120 at the old mobile constant
+  const safeRows = Math.min(desiredRows, minGroupSize);
+  const HEIGHT_END = isRetinaBand || isUW ? logoH * safeRows + 12 * (safeRows - 1) : 780;
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 
@@ -1808,6 +1845,7 @@ if (document.documentElement.classList.contains('pt-enter')) {
 (() => {
   const viewport = document.querySelector('[data-carousel]');
   const track = viewport && viewport.querySelector('.grid-track');
+  const portfolioSection = document.querySelector('.portfolio');
   if (!track) return;
   const DRIFT = 38;       // px/sec idle drift
   const EASE_BACK = 1.6;  // how quickly momentum settles back to the drift
@@ -1840,9 +1878,17 @@ if (document.documentElement.classList.contains('pt-enter')) {
     thumb.style.setProperty('--f', f.toFixed(4));
   };
 
+  // Once the user has actually grabbed the carousel during the pinned
+  // scroll-follow phase, their drag/throw wins for the rest of that pass —
+  // scroll-follow doesn't resume and snap it back just because they let go.
+  // Re-armed the next time the section is approached from scratch (see
+  // pinProgress's 'before' case below).
+  let manualOverride = false;
+
   viewport.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     grabbing = true;
+    manualOverride = true;
     viewport.classList.add('is-dragging');
     viewport.setPointerCapture(e.pointerId);
     startX = lastX = e.clientX;
@@ -1893,20 +1939,54 @@ if (document.documentElement.classList.contains('pt-enter')) {
   let visible = true;
   new IntersectionObserver((en) => { visible = en[0].isIntersecting; }).observe(viewport);
   let last = performance.now();
+  // While the portfolio section is pinned (sticky, mid-scroll through its
+  // runway), page scroll drives the carousel from its first card to its
+  // last instead of the idle drift — grabbing it still overrides at any
+  // point, pinned or not. `null` before the section is reached at all (not
+  // just clamped to 0) so the carousel sits still at the first card instead
+  // of drifting away before you've actually arrived; once the runway's
+  // scroll is used up (raw progress >= 1) the pin has released and it goes
+  // back to drifting/being dragged freely.
+  const HOLD = 0.12; // fraction of the pin's scroll held at each end, so the
+                      // first/last card gets a beat fully settled in view
+                      // before the scroll-follow starts/stops moving it.
+  const pinProgress = () => {
+    if (!portfolioSection) return null;
+    const scrollable = portfolioSection.offsetHeight - window.innerHeight;
+    if (scrollable <= 0) return null;
+    const p = -portfolioSection.getBoundingClientRect().top / scrollable;
+    if (p <= 0) return 'before';
+    if (p >= 1) return 'after';
+    if (p < HOLD) return 0;
+    if (p > 1 - HOLD) return 1;
+    return (p - HOLD) / (1 - 2 * HOLD);
+  };
+
   const loop = (now) => {
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     if (visible && !grabbing) {
-      const over = pos < min ? pos - min : (pos > max ? pos - max : 0);
-      if (over) {
-        // Past an end: spring back in.
-        vel += (-over * 90 - vel * 11) * dt;
+      const progress = pinProgress();
+      if (progress === 'before') {
+        manualOverride = false; // re-arm for the next approach
+      } else if (typeof progress === 'number' && !manualOverride) {
+        // Eased toward the scroll-mapped target, not snapped 1:1, so the
+        // scrubbing feels smooth rather than rigid.
+        const targetPos = min + progress * (max - min);
+        pos += (targetPos - pos) * Math.min(1, dt * 6);
+        vel = 0;
       } else {
-        if (pos >= max - 1) dir = -1;
-        else if (pos <= min + 1) dir = 1;
-        vel += (dir * DRIFT - vel) * (1 - Math.exp(-EASE_BACK * dt));
+        const over = pos < min ? pos - min : (pos > max ? pos - max : 0);
+        if (over) {
+          // Past an end: spring back in.
+          vel += (-over * 90 - vel * 11) * dt;
+        } else {
+          if (pos >= max - 1) dir = -1;
+          else if (pos <= min + 1) dir = 1;
+          vel += (dir * DRIFT - vel) * (1 - Math.exp(-EASE_BACK * dt));
+        }
+        pos += vel * dt;
       }
-      pos += vel * dt;
       render();
     }
     requestAnimationFrame(loop);
