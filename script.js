@@ -187,49 +187,170 @@ document.querySelectorAll('.network-lead-after, .network-subcopy').forEach(el =>
 // Just add/replace entries here (paste the full list when it's ready) —
 // columns and the seamless loop are built automatically from this array.
 const NETWORK_LOGOS = [
-  { src: 'images/network-logo/amex.png', alt: 'American Express' },
-  { src: 'images/network-logo/arizona.png', alt: 'Arizona' },
-  { src: 'images/network-logo/betr.png', alt: 'Betr' },
-  { src: 'images/network-logo/caa.png', alt: 'CAA' },
-  { src: 'images/network-logo/caesars.png', alt: 'Caesars' },
-  { src: 'images/network-logo/cox.png', alt: 'Cox Enterprises' },
-  { src: 'images/network-logo/douglas.png', alt: 'Douglas Elliman' },
-  { src: 'images/network-logo/fanatics.png', alt: 'Fanatics' },
-  { src: 'images/network-logo/fisker.png', alt: 'Fisker' },
-  { src: 'images/network-logo/goldenhipo.png', alt: 'Golden Hippo' },
-  { src: 'images/network-logo/green.png', alt: 'Green Mountain Coffee Roasters' },
-  { src: 'images/network-logo/groot.png', alt: 'Groot Hospitality' },
-  { src: 'images/network-logo/houlihan.png', alt: 'Houlihan Lokey' },
-  { src: 'images/network-logo/hwood.png', alt: 'The h.wood Group' },
-  { src: 'images/network-logo/keurig.png', alt: 'Keurig' },
-  { src: 'images/network-logo/live-nation.png', alt: 'Live Nation' },
-  { src: 'images/network-logo/mlb.png', alt: 'MLB' },
-  { src: 'images/network-logo/nba.png', alt: 'NBA' },
-  { src: 'images/network-logo/nfl.png', alt: 'NFL' },
-  { src: 'images/network-logo/nhl.png', alt: 'NHL' },
-  { src: 'images/network-logo/bausch.png', alt: 'Bausch + Lomb' },
-  { src: 'images/network-logo/liv.png', alt: 'LIV Golf' },
-  { src: 'images/network-logo/nksfb.png', alt: 'NKSFB' },
-  { src: 'images/network-logo/pnc.png', alt: 'PNC' },
-  { src: 'images/network-logo/prime.png', alt: 'PRIME' },
-  { src: 'images/network-logo/ripple.png', alt: 'Ripple' },
-  { src: 'images/network-logo/rolling.png', alt: 'Rolling Loud' },
-  { src: 'images/network-logo/skechers.png', alt: 'Skechers' },
-  { src: 'images/network-logo/uta.png', alt: 'UTA' },
+  { src: 'images/our-network-logos/amex.png', alt: 'American Express' },
+  { src: 'images/our-network-logos/arizona.png', alt: 'Arizona' },
+  { src: 'images/our-network-logos/caa.png', alt: 'CAA' },
+  { src: 'images/our-network-logos/caesars.png', alt: 'Caesars' },
+  { src: 'images/our-network-logos/cox.png', alt: 'Cox Enterprises' },
+  { src: 'images/our-network-logos/douglas.png', alt: 'Douglas Elliman' },
+  { src: 'images/our-network-logos/fanatics.png', alt: 'Fanatics' },
+  { src: 'images/our-network-logos/groot.png', alt: 'Groot Hospitality' },
+  { src: 'images/our-network-logos/houlihan.png', alt: 'Houlihan Lokey' },
+  { src: 'images/our-network-logos/hwood.png', alt: 'The h.wood Group' },
+  { src: 'images/our-network-logos/keurig.png', alt: 'Keurig' },
+  { src: 'images/our-network-logos/live-nation.png', alt: 'Live Nation' },
+  { src: 'images/our-network-logos/mlb.png', alt: 'MLB' },
+  { src: 'images/our-network-logos/nba.png', alt: 'NBA' },
+  { src: 'images/our-network-logos/nfl.png', alt: 'NFL' },
+  { src: 'images/our-network-logos/bausch.png', alt: 'Bausch + Lomb' },
+  { src: 'images/our-network-logos/pnc.png', alt: 'PNC' },
+  { src: 'images/our-network-logos/prime.png', alt: 'PRIME' },
+  { src: 'images/our-network-logos/ripple.png', alt: 'Ripple' },
+  { src: 'images/our-network-logos/rolling.png', alt: 'Rolling Loud' },
+  { src: 'images/our-network-logos/skechers.png', alt: 'Skechers' },
+  { src: 'images/our-network-logos/uta.png', alt: 'UTA' },
+  { src: 'images/our-network-logos/tesla.png', alt: 'Tesla' },
+  { src: 'images/our-network-logos/netflix.png', alt: 'Netflix' },
+  { src: 'images/our-network-logos/spotify.png', alt: 'Spotify' },
+  { src: 'images/our-network-logos/coca-cola.png', alt: 'Coca-Cola' },
+  { src: 'images/our-network-logos/reddit.png', alt: 'Reddit' },
+  { src: 'images/our-network-logos/salesforce.png', alt: 'Salesforce' },
+  { src: 'images/our-network-logos/hulu.png', alt: 'Hulu' },
+];
+
+// All-logos page: full network roster, one 200px tile per logo.
+// Superset of NETWORK_LOGOS (the curated homepage marquee) plus every
+// additional sourced logo — used only by network-partners.html.
+// Alphabetical by company name — this array drives the "View All" grid.
+const ALL_NETWORK_LOGOS = [
+  { src: 'images/our-network-logos/abbvie.png', alt: 'AbbVie' },
+  { src: 'images/our-network-logos/adidas-white.png', alt: 'Adidas' },
+  { src: 'images/our-network-logos/adobe.png', alt: 'Adobe' },
+  { src: 'images/our-network-logos/alo-yoga.png', alt: 'Alo Yoga' },
+  { src: 'images/our-network-logos/amex-white.png', alt: 'American Express' },
+  { src: 'images/our-network-logos/anduril.png', alt: 'Anduril' },
+  { src: 'images/our-network-logos/arizona-white.png', alt: 'Arizona' },
+  { src: 'images/our-network-logos/barstool.png', alt: 'Barstool Sports' },
+  { src: 'images/our-network-logos/bausch-white.png', alt: 'Bausch + Lomb' },
+  { src: 'images/our-network-logos/bergdorf.png', alt: 'Bergdorf Goodman' },
+  { src: 'images/our-network-logos/beta-tech.png', alt: 'BETA Technologies' },
+  { src: 'images/our-network-logos/betr.png', alt: 'Betr' },
+  { src: 'images/our-network-logos/billabong.png', alt: 'Billabong' },
+  { src: 'images/our-network-logos/brooks-brothers.png', alt: 'Brooks Brothers' },
+  { src: 'images/our-network-logos/burger-king.png', alt: 'Burger King' },
+  { src: 'images/our-network-logos/caa-white.png', alt: 'CAA' },
+  { src: 'images/our-network-logos/caesars-white.png', alt: 'Caesars' },
+  { src: 'images/our-network-logos/celsius.png', alt: 'Celsius' },
+  { src: 'images/our-network-logos/champion.png', alt: 'Champion' },
+  { src: 'images/our-network-logos/coca-cola-white.png', alt: 'Coca-Cola' },
+  { src: 'images/our-network-logos/cox-white.png', alt: 'Cox Enterprises' },
+  { src: 'images/our-network-logos/dc-shoes.png', alt: 'DC Shoes' },
+  { src: 'images/our-network-logos/delta.png', alt: 'Delta Air Lines' },
+  { src: 'images/our-network-logos/dicks.png', alt: "DICK'S Sporting Goods" },
+  { alt: 'Discovery Land Company' },
+  { src: 'images/our-network-logos/disney-white.png', alt: 'Disney' },
+  { src: 'images/our-network-logos/douglas-white.png', alt: 'Douglas Elliman' },
+  { src: 'images/our-network-logos/e11even.png', alt: 'E11EVEN' },
+  { src: 'images/our-network-logos/eddie-bauer.png', alt: 'Eddie Bauer' },
+  { alt: 'Erebor' },
+  { src: 'images/our-network-logos/erewhon.png', alt: 'Erewhon' },
+  { src: 'images/our-network-logos/fanatics-white.png', alt: 'Fanatics' },
+  { alt: 'Fishwife' },
+  { src: 'images/our-network-logos/fisker.png', alt: 'Fisker' },
+  { src: 'images/our-network-logos/ford.png', alt: 'Ford' },
+  { src: 'images/our-network-logos/formula1.png', alt: 'Formula 1' },
+  { alt: 'Fruitist' },
+  { alt: 'Gecko Robotics' },
+  { src: 'images/our-network-logos/goldenhipo.png', alt: 'Golden Hippo' },
+  { src: 'images/our-network-logos/green.png', alt: 'Green Mountain Coffee Roasters' },
+  { src: 'images/our-network-logos/groot-white.png', alt: 'Groot Hospitality' },
+  { src: 'images/our-network-logos/guess.png', alt: 'GUESS' },
+  { alt: 'Gusto' },
+  { src: 'images/our-network-logos/hard-rock.png', alt: 'Hard Rock International' },
+  { src: 'images/our-network-logos/houlihan-white.png', alt: 'Houlihan Lokey' },
+  { src: 'images/our-network-logos/hulu-white.png', alt: 'Hulu' },
+  { src: 'images/our-network-logos/intuit.png', alt: 'Intuit' },
+  { src: 'images/our-network-logos/jersey-mikes.png', alt: "Jersey Mike's" },
+  { alt: "Kay Jewelers" },
+  { src: 'images/our-network-logos/keurig-white.png', alt: 'Keurig' },
+  { src: 'images/our-network-logos/kith.png', alt: 'KITH' },
+  { src: 'images/our-network-logos/lexus.png', alt: 'Lexus' },
+  { alt: 'Lightning Labs' },
+  { src: 'images/our-network-logos/liv.png', alt: 'LIV Golf' },
+  { src: 'images/our-network-logos/live-nation-white.png', alt: 'Live Nation' },
+  { src: 'images/our-network-logos/lowes.png', alt: "Lowe's" },
+  { src: 'images/our-network-logos/lucky-brand.png', alt: 'Lucky Brand' },
+  { src: 'images/our-network-logos/lucky-strike.png', alt: 'Lucky Strike Entertainment' },
+  { src: 'images/our-network-logos/mars.png', alt: 'Mars Inc.' },
+  { src: 'images/our-network-logos/mikes-hot-honey.png', alt: "Mike's Hot Honey" },
+  { src: 'images/our-network-logos/mlb-white.png', alt: 'MLB' },
+  { src: 'images/our-network-logos/moonpay.png', alt: 'MoonPay' },
+  { alt: 'Nautica' },
+  { src: 'images/our-network-logos/nba-white.png', alt: 'NBA' },
+  { src: 'images/our-network-logos/neiman-marcus.png', alt: 'Neiman Marcus' },
+  { src: 'images/our-network-logos/netflix-white.png', alt: 'Netflix' },
+  { src: 'images/our-network-logos/neuralink.png', alt: 'Neuralink' },
+  { src: 'images/our-network-logos/nfl-white.png', alt: 'NFL' },
+  { src: 'images/our-network-logos/nhl.png', alt: 'NHL' },
+  { src: 'images/our-network-logos/nike-white.png', alt: 'Nike' },
+  { src: 'images/our-network-logos/nine-west.png', alt: 'Nine West' },
+  { src: 'images/our-network-logos/nksfb.png', alt: 'NKSFB' },
+  { src: 'images/our-network-logos/omnicom.png', alt: 'Omnicom' },
+  { src: 'images/our-network-logos/openai.png', alt: 'OpenAI' },
+  { src: 'images/our-network-logos/palantir.png', alt: 'Palantir' },
+  { alt: 'Palm Tree Crew' },
+  { alt: 'Peregrine Technologies' },
+  { src: 'images/our-network-logos/planet-fitness.png', alt: 'Planet Fitness' },
+  { src: 'images/our-network-logos/pnc-white.png', alt: 'PNC' },
+  { src: 'images/our-network-logos/prime-white.png', alt: 'PRIME' },
+  { src: 'images/our-network-logos/prizepicks.png', alt: 'PrizePicks' },
+  { src: 'images/our-network-logos/quiksilver.png', alt: 'Quiksilver' },
+  { src: 'images/our-network-logos/reddit-white.png', alt: 'Reddit' },
+  { src: 'images/our-network-logos/reebok.png', alt: 'Reebok' },
+  { src: 'images/our-network-logos/ripple-white.png', alt: 'Ripple' },
+  { src: 'images/our-network-logos/rolling-white.png', alt: 'Rolling Loud' },
+  { src: 'images/our-network-logos/rvca.png', alt: 'RVCA' },
+  { src: 'images/our-network-logos/saks.png', alt: 'Saks Global' },
+  { src: 'images/our-network-logos/salesforce-white.png', alt: 'Salesforce' },
+  { alt: 'Science Corp.' },
+  { src: 'images/our-network-logos/skechers-white.png', alt: 'Skechers' },
+  { src: 'images/our-network-logos/sothebys.png', alt: "Sotheby's" },
+  { src: 'images/our-network-logos/spacex-white.png', alt: 'SpaceX' },
+  { src: 'images/our-network-logos/spotify-white.png', alt: 'Spotify' },
+  { alt: 'Superpower' },
+  { src: 'images/our-network-logos/tesla-white.png', alt: 'Tesla' },
+  { src: 'images/our-network-logos/hwood-white.png', alt: 'The h.wood Group' },
+  { src: 'images/our-network-logos/toyota.png', alt: 'Toyota' },
+  { src: 'images/our-network-logos/ufc.png', alt: 'UFC' },
+  { src: 'images/our-network-logos/umg.png', alt: 'Universal Music Group' },
+  { src: 'images/our-network-logos/uta-white.png', alt: 'UTA' },
+  { src: 'images/our-network-logos/verkada.png', alt: 'Verkada' },
+  { alt: 'Vince' },
+  { alt: 'Vince Camuto' },
+  { src: 'images/our-network-logos/volcom.png', alt: 'Volcom' },
+  { src: 'images/our-network-logos/walmart.png', alt: 'Walmart' },
+  { src: 'images/our-network-logos/wme.png', alt: 'WME' },
 ];
 
 // All-logos page: one 200px tile per network logo.
 (() => {
   const gridEl = document.querySelector('[data-logo-grid]');
   if (!gridEl) return;
-  NETWORK_LOGOS.forEach((logo, i) => {
+  ALL_NETWORK_LOGOS.forEach((logo, i) => {
     const tile = document.createElement('div');
     tile.className = 'logo-tile';
-    const img = document.createElement('img');
-    img.src = logo.src;
-    img.alt = logo.alt;
-    img.loading = 'lazy';
-    tile.appendChild(img);
+    if (logo.src) {
+      const img = document.createElement('img');
+      img.src = logo.src;
+      img.alt = logo.alt;
+      img.loading = 'lazy';
+      tile.appendChild(img);
+    } else {
+      tile.classList.add('logo-tile-text');
+      const span = document.createElement('span');
+      span.textContent = logo.alt;
+      tile.appendChild(span);
+    }
     gridEl.appendChild(tile);
     tile.style.setProperty('--d', (0.45 + Math.min(i, 40) * 0.045) + 's');
     requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('is-in')));
@@ -266,16 +387,7 @@ const NETWORK_LOGOS = [
     // repeated once more back-to-back for the seamless scroll loop. As
     // long as a group has more items than fit in the visible height, the
     // same logo is never on screen twice at once.
-    let group = groups[c].length ? groups[c] : NETWORK_LOGOS;
-    // Pad short groups by repeating their own logos — a temporary stopgap
-    // so every column has at least 5 rows worth of track to loop through.
-    const MIN_PER_COLUMN = 5;
-    if (group.length < MIN_PER_COLUMN) {
-      const padded = [];
-      for (let i = 0; i < MIN_PER_COLUMN; i++) padded.push(group[i % group.length]);
-      group = padded;
-    }
-    const sequence = group;
+    const sequence = groups[c].length ? groups[c] : NETWORK_LOGOS;
 
     [...sequence, ...sequence].forEach(logo => {
       const item = document.createElement('span');

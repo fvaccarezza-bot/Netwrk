@@ -560,8 +560,11 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 
 /* ---------- Legal page ---------- */
 .legal{max-width:900px;margin:0 auto;padding:90px 24px 140px;font-family:var(--sans);color:var(--fg-dim)}
-.back-link{display:inline-flex;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:60px}
+.back-link{display:inline-flex;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:60px;
+  transition:color .3s var(--ease)}
 .back-link:hover{color:#fff}
+.back-link-text{display:inline-block;transition:transform .3s var(--ease)}
+.back-link:hover .back-link-text{transform:translateX(6px)}
 .legal h1{font-family:var(--sans);font-weight:800;font-size:clamp(34px,20px + 3vw,54px);color:var(--fg);letter-spacing:-.02em;margin:0 0 36px}
 .legal h2{font-family:var(--sans);font-weight:800;font-size:clamp(26px,16px + 2vw,38px);color:var(--fg);letter-spacing:-.02em;
   margin:80px 0 28px;padding-top:40px;border-top:1px solid var(--line)}
@@ -599,10 +602,13 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
     linear-gradient(to left,var(--line) 0 10px,transparent 0) bottom right/10px 1px no-repeat,
     linear-gradient(to top,var(--line) 0 10px,transparent 0) bottom right/1px 10px no-repeat}
 .logo-tile img{max-width:100%;max-height:100%;object-fit:contain}
+.logo-tile-text span{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--fg-dim);text-align:center;line-height:1.5}
 
 /* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
   :root{--wrap:1600px}
+  .network-pin{overflow-y:hidden}
   .num,.cat{font-size:13px}
   .hero-nodes{width:1700px;max-width:88vw;top:calc(32% - 450px)}
   /* 3 columns of 500px cards + gaps need ~1544px — the base clamp ceiling
