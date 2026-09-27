@@ -223,17 +223,16 @@ const NETWORK_LOGOS = [
   { src: 'images/our-network-logos/home/adobe.png', alt: 'Adobe' },
   { src: 'images/our-network-logos/home/verkada.png', alt: 'Verkada' },
   { src: 'images/our-network-logos/home/formula1.png', alt: 'Formula 1' },
-  // Color logo pending — text placeholder for now.
-  { alt: "Lowe's" },
-  { alt: 'Planet Fitness' },
+  { src: 'images/our-network-logos/home/lowes.png', alt: "Lowe's" },
+  { src: 'images/our-network-logos/home/planet-fitness.png', alt: 'Planet Fitness' },
   { src: 'images/our-network-logos/home/intuit.png', alt: 'Intuit' },
-  { alt: 'PrizePicks' },
+  { src: 'images/our-network-logos/home/prizepicks.png', alt: 'PrizePicks' },
   { src: 'images/our-network-logos/home/moonpay.png', alt: 'MoonPay' },
   { src: 'images/our-network-logos/home/mars.png', alt: 'Mars Inc.' },
   { src: 'images/our-network-logos/home/hard-rock.png', alt: 'Hard Rock International' },
   { src: 'images/our-network-logos/home/celsius.png', alt: 'Celsius' },
   { src: 'images/our-network-logos/home/abbvie.png', alt: 'AbbVie' },
-  { alt: "Mike's Hot Honey" },
+  { src: 'images/our-network-logos/home/mikes-hot-honey.png', alt: "Mike's Hot Honey" },
   { src: 'images/our-network-logos/home/champion.png', alt: 'Champion' },
   { src: 'images/our-network-logos/home/burger-king.png', alt: 'Burger King' },
   { src: 'images/our-network-logos/home/reebok.png', alt: 'Reebok' },
@@ -345,7 +344,7 @@ const ALL_NETWORK_LOGOS = [
   { src: 'images/our-network-logos/view-all/toyota-white.png', alt: 'Toyota' },
   { src: 'images/our-network-logos/view-all/ufc-white.png', alt: 'UFC' },
   { src: 'images/our-network-logos/view-all/umg.png', alt: 'Universal Music Group' },
-  { src: 'images/our-network-logos/view-all/uta-white.png', alt: 'UTA' },
+  { src: 'images/our-network-logos/view-all/uta-white.png', alt: 'United Talent Agency' },
   { src: 'images/our-network-logos/view-all/verkada-white.png', alt: 'Verkada' },
   { src: 'images/our-network-logos/view-all/vince.png', alt: 'Vince' },
   { src: 'images/our-network-logos/view-all/vincecamuto.png', alt: 'Vince Camuto' },
@@ -367,6 +366,10 @@ const ALL_NETWORK_LOGOS = [
       img.alt = logo.alt;
       img.loading = 'lazy';
       tile.appendChild(img);
+      const label = document.createElement('span');
+      label.className = 'logo-tile-label';
+      label.textContent = logo.alt;
+      tile.appendChild(label);
     } else {
       tile.classList.add('logo-tile-text');
       const span = document.createElement('span');
@@ -520,7 +523,7 @@ const ALL_NETWORK_LOGOS = [
   // how many logos NETWORK_LOGOS ends up with.
   const MARQUEE_COLS = isRetinaBand ? 9 : (isUW ? 10 : 4);
   const minGroupSize = Math.max(1, Math.floor(NETWORK_LOGOS.length / MARQUEE_COLS));
-  const desiredRows = isRetinaBand ? 4 : (isUW ? 4 : 6.5); // 6.5 ≈ 780/120 at the old mobile constant
+  const desiredRows = isRetinaBand ? 3.6 : (isUW ? 4 : 6.5); // 6.5 ≈ 780/120 at the old mobile constant; retina's 3.6 (was 4) trims the max reveal ~10% without touching logo size
   const safeRows = Math.min(desiredRows, minGroupSize);
   const HEIGHT_END = isRetinaBand || isUW ? logoH * safeRows + 12 * (safeRows - 1) : 780;
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
@@ -1912,7 +1915,7 @@ if (document.documentElement.classList.contains('pt-enter')) {
     if (!grabbing) return;
     grabbing = false;
     viewport.classList.remove('is-dragging');
-    if (performance.now() - lastT > 90) vel = 0; // held still before letting go
+    if (performance.now() - lastT > 200) vel = 0; // held still before letting go
     vel = Math.max(-4000, Math.min(4000, vel));
     if (reduceMotion) { vel = 0; pos = Math.max(min, Math.min(max, pos)); render(); }
     else if (Math.abs(vel) > 20) dir = vel > 0 ? 1 : -1;
