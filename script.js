@@ -19,6 +19,61 @@ function resolveReducedMotion() {
 }
 const reduceMotion = resolveReducedMotion();
 document.body.classList.toggle('motion-on', !reduceMotion);
+
+// Page loader: the hero's own node-network canvas doubles as the loading
+// indicator — shown centered in the viewport (full opacity, no mask) while
+// the page loads, then slides right into its normal hero position as the
+// loader fades away. Skipped entirely under reduced motion (page just
+// appears normally, no loader).
+if (!reduceMotion) {
+  const loaderEl = document.querySelector('.page-loader');
+  const nodesEl = document.querySelector('.hero-nodes');
+  if (loaderEl && nodesEl) {
+    document.body.classList.add('is-loading');
+    // Measure the canvas's natural (home) position before shifting it, so
+    // the offset works at any viewport size without hardcoding numbers.
+    requestAnimationFrame(() => {
+      const rect = nodesEl.getBoundingClientRect();
+      const naturalCenterX = rect.left + rect.width / 2;
+      const viewportCenterX = window.innerWidth / 2;
+      nodesEl.style.setProperty('--loader-x', `${viewportCenterX - naturalCenterX}px`);
+
+      // Real progress readout — waits one frame first so every <img> the
+      // rest of script.js builds (the logo marquee, etc.) already exists
+      // in the DOM to be counted, not just what's in the static HTML.
+      const pctEl = loaderEl.querySelector('[data-loader-pct]');
+      if (pctEl) {
+        const imgs = Array.from(document.images);
+        const total = imgs.length || 1;
+        let loaded = 0;
+        const update = () => {
+          loaded++;
+          pctEl.textContent = String(Math.min(100, Math.round((loaded / total) * 100)));
+        };
+        imgs.forEach(img => {
+          if (img.complete) update();
+          else { img.addEventListener('load', update); img.addEventListener('error', update); }
+        });
+      }
+    });
+
+    // ?loader=5000 forces a longer minimum (ms) for testing, e.g.
+    // index.html?loader=5000 — normal visits are unaffected.
+    const loaderParam = parseInt(new URLSearchParams(location.search).get('loader'), 10);
+    const MIN_LOADER_MS = Number.isFinite(loaderParam) ? loaderParam : 1600;
+    const loadStart = performance.now();
+    const release = () => {
+      const wait = Math.max(0, MIN_LOADER_MS - (performance.now() - loadStart));
+      setTimeout(() => {
+        document.body.classList.remove('is-loading');
+        nodesEl.style.setProperty('--loader-x', '0px');
+        setTimeout(() => { loaderEl.remove(); }, 900);
+      }, wait);
+    };
+    if (document.readyState === 'complete') release();
+    else window.addEventListener('load', release);
+  }
+}
 // Ease-in-out for 0-1 progress ramps, so reveals/holds settle in and out
 // instead of hitting their start/end point at full speed (a linear ramp
 // looks like it gets cut off right at the boundary).

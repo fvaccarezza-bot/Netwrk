@@ -116,11 +116,22 @@ body.menu-open .menu a:hover{opacity:.6}
   padding:clamp(56px, 8px + 3.75vw, 80px) 0;
 }
 .hero-nodes{position:absolute;top:calc(32% - 250px);right:calc(50% - 50vw);width:1400px;height:1400px;max-width:80vw;max-height:92vh;
-  transform:translateY(-50%);
+  transform:translateY(-50%) translateX(var(--loader-x, 0px));
   -webkit-mask-image:radial-gradient(circle,#000 55%,transparent 78%),linear-gradient(to right,transparent 0%,#000 55%);
   mask-image:radial-gradient(circle,#000 55%,transparent 78%),linear-gradient(to right,transparent 0%,#000 55%);
   mask-composite:intersect;-webkit-mask-composite:source-in;
   z-index:0;pointer-events:none;will-change:transform}
+
+/* ---------- Page loader: hero-nodes canvas appears centered as a loading
+   indicator, then slides right into its normal hero position once ready ---------- */
+.page-loader{position:fixed;inset:0;z-index:999;background:var(--bg);opacity:0;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .8s var(--ease)}
+.page-loader-pct{position:relative;z-index:1001;margin:0;font-family:var(--mono);font-size:14px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--fg-dim)}
+body.is-loading .page-loader{opacity:1;pointer-events:auto}
+body.is-loading .hero-nodes{opacity:1;z-index:1000;-webkit-mask:none;mask:none;transition:none}
+body:not(.is-loading) .hero-nodes{transition:opacity 1.3s var(--ease),transform .9s var(--ease) .1s}
 .eyebrow{position:relative;z-index:1;font-family:var(--mono);font-size:clamp(13px, -1px + 1.09vw, 20px);letter-spacing:.18em;text-transform:uppercase;color:#e6e6e6;margin:0 0 26px}
 .hero h1{position:relative;z-index:1;margin:0;line-height:1.12;letter-spacing:-.03em}
 .h1-bold{display:block;font-size:clamp(60px, -20px + 6.25vw, 100px);font-weight:800}
