@@ -72,7 +72,7 @@ html.lenis,html.lenis body{height:auto}
   padding:clamp(10px, 2px + 0.63vw, 14px) clamp(28px, 4px + 1.88vw, 40px);background:none;pointer-events:none}
 .header a,.header button{pointer-events:auto}
 .logo{display:flex;align-items:center}
-.logo-img{display:block;height:clamp(29px, 1px + 2.19vw, 43px);width:auto}
+.logo-img{display:block;height:clamp(23px, 0.8px + 1.75vw, 34px);width:auto}
 body{padding-top:var(--header-h)}
 
 /* ---------- Menu toggle ---------- */
@@ -92,14 +92,20 @@ body.menu-open .burger-icon{transform:rotate(45deg) scale(.85)}
   transition:opacity .7s var(--ease),transform .9s var(--ease);transition-delay:.35s}
 body.menu-open .menu{opacity:1;transform:translateY(0);pointer-events:auto;transition-delay:0s}
 .menu a{font-size:clamp(54px, 18px + 2.81vw, 72px);font-weight:300;letter-spacing:-.02em;text-align:right;padding:8px 0;
-  opacity:0;filter:blur(14px);transform:translateY(26px);
-  transition:opacity .5s var(--ease),filter .5s var(--ease),transform .5s var(--ease)}
+  opacity:0;filter:blur(14px);transform:translateY(26px);pointer-events:none;
+  /* pointer-events rides the same per-link transition-delay as the other
+     properties below (set via the :nth-child rules) — so a link only
+     becomes clickable once it's actually finished revealing. Clicking fast
+     right after opening used to be able to hit a still-blurred/offset link
+     (opacity/filter/transform don't block hit-testing on their own), which
+     interrupted its entrance transition mid-flight and looked broken. */
+  transition:opacity .5s var(--ease),filter .5s var(--ease),transform .5s var(--ease),pointer-events 0s var(--ease)}
 /* Closing: reverse order — the last link to arrive is the first to leave */
 .menu a:nth-child(1){transition-delay:.15s}
 .menu a:nth-child(2){transition-delay:.1s}
 .menu a:nth-child(3){transition-delay:.05s}
 .menu a:nth-child(4){transition-delay:0s}
-body.menu-open .menu a{opacity:1;filter:blur(0);transform:translateY(0)}
+body.menu-open .menu a{opacity:1;filter:blur(0);transform:translateY(0);pointer-events:auto}
 body.menu-open .menu a:nth-child(1){transition-delay:.45s}
 body.menu-open .menu a:nth-child(2){transition-delay:.52s}
 body.menu-open .menu a:nth-child(3){transition-delay:.59s}
@@ -597,6 +603,10 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   /* 20% smaller than the shared .card-logo scale (portfolio untouched) —
      same fluid formula, just multiplied down, frame/card size unchanged. */
   .co-investor-card .card-logo{transform:scale(calc(0.72 * clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9)))}
+  /* Extra dead scroll so the "One thesis / Multiple partners" outro has
+     fully scrolled past before the giant footer wordmark comes into view —
+     otherwise both were visible in the same viewport at once. */
+  .co-investors{padding-bottom:calc(clamp(96px, -32px + 10vw, 160px) + 340px)}
 }
 
 /* ---------- Footer: wordmark con blur-reveal (una sola vez, al fondo del viewport) ---------- */
@@ -616,7 +626,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 }
 
 .footer-bottom{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between;
-  padding:16px 24px;font-family:var(--mono);font-size:clamp(8px, 2px + 0.47vw, 11px);letter-spacing:.08em;color:#1a1a1a}
+  padding:10px 24px;font-family:var(--mono);font-size:clamp(8px, 2px + 0.47vw, 11px);letter-spacing:.08em;color:#1a1a1a}
 .footer-bottom a{color:#1a1a1a;text-decoration:underline;text-underline-offset:3px;text-transform:uppercase}
 .footer-bottom a:hover{color:#000}
 
@@ -713,7 +723,7 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 .logo-tile-text span{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
   color:var(--fg-dim);text-align:center;line-height:1.5}
 
-/* ---------- Large desktop / UW: restore the original card label size above the retina band ---------- */
+/* ---------- Normal desktop (1920x1080 y similares): restore the original card label size above the retina band ---------- */
 @media (min-width:1920px){
   :root{--wrap:1600px}
   .network-pin{overflow-y:hidden}
@@ -783,6 +793,11 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
     background:linear-gradient(to top,var(--bg) 0%,rgba(5,5,5,.85) 55%,transparent 100%)}
 }
 
+/* ---------- UW (true ultrawide, 2560px+): inherits the Normal block above as
+   its base; add overrides here only, don't touch the 1920 block. ---------- */
+@media (min-width:2560px){
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width:900px){
   .wrap{padding:0 24px}
@@ -829,3 +844,17 @@ body.has-cursor:has(.grid:hover) .cursor-dot,body.has-cursor:has(.grid:hover) .c
   width:calc(var(--tw,25%) * .4);transform:translateX(calc(var(--f,0) * -100%));background:#fff;
   opacity:.5;transition:width .7s var(--ease),opacity .7s var(--ease)}
 .carousel:hover .carousel-ind i{width:var(--tw,25%);opacity:1}
+
+/* ---------- Portfolio, retina: static grid, no pin/carousel — client wants
+   all 12 companies visible at once, fixed 4x3, no scroll. ---------- */
+@media (min-width:901px) and (max-width:1919.98px){
+  .portfolio{height:auto}
+  .portfolio-pin{position:relative;height:auto}
+  .carousel{--gw:min(1600px, 94vw)}
+  .carousel::before,.carousel::after{display:none}
+  .carousel-ind{display:none}
+  .grid{overflow:visible}
+  .grid-track{display:grid;grid-template-columns:repeat(3,1fr);width:100%;padding:0}
+  .grid .card{flex:none}
+  body.has-cursor .grid{cursor:default}
+}

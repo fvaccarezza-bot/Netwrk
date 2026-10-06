@@ -818,6 +818,27 @@ const ALL_NETWORK_LOGOS = [
 
   const step = () => {
     canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
+    if (pendingClientX !== null) {
+      const heroRect = heroEl.getBoundingClientRect();
+      if (pendingClientY < heroRect.top || pendingClientY > heroRect.bottom) {
+        mouse.active = false;
+      } else {
+        // canvas.getBoundingClientRect() already reflects its live parallax
+        // transform, so this lines up with the canvas's local drawing space
+        // with no extra math needed.
+        const rect = canvas.getBoundingClientRect();
+        const nx = pendingClientX - rect.left;
+        const ny = pendingClientY - rect.top;
+        if (!mouse.active) {
+          // Snap on entry so the cursor node doesn't fly in from off-screen.
+          cursorNode.x = nx;
+          cursorNode.y = ny;
+        }
+        mouse.x = nx;
+        mouse.y = ny;
+        mouse.active = true;
+      }
+    }
     // Fades and blurs out over the first viewport height of scroll, so the
     // node field dissolves away as it parallax-scrolls out of the hero
     // instead of just sliding off with a hard edge.
@@ -920,30 +941,44 @@ const ALL_NETWORK_LOGOS = [
   // Listens on window (not heroEl) so the hover reach covers the full
   // viewport width, including the UW margins outside .wrap — only the
   // vertical range stays gated to the hero section's own bounds.
+  // Only stores the raw pointer position here (no layout read) — resolving
+  // it against the live rects happens once per animation frame in step()
+  // instead of on every single mousemove, which was forcing a layout read
+  // per pixel of mouse travel.
+  let pendingClientX = null, pendingClientY = null;
   window.addEventListener('mousemove', (e) => {
-    const heroRect = heroEl.getBoundingClientRect();
-    if (e.clientY < heroRect.top || e.clientY > heroRect.bottom) {
-      mouse.active = false;
-      return;
-    }
-    // canvas.getBoundingClientRect() already reflects its live parallax
-    // transform, so this lines up with the canvas's local drawing space
-    // with no extra math needed.
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-    if (!mouse.active) {
-      // Snap on entry so the cursor node doesn't fly in from off-screen.
-      cursorNode.x = mouse.x;
-      cursorNode.y = mouse.y;
-    }
-    mouse.active = true;
+    pendingClientX = e.clientX;
+    pendingClientY = e.clientY;
   });
   window.addEventListener('mouseout', (e) => {
-    if (!e.relatedTarget) mouse.active = false;
+    if (!e.relatedTarget) { mouse.active = false; pendingClientX = null; }
   });
 
   raf = requestAnimationFrame(step);
+
+  // Pauses the whole per-frame node simulation (O(n^2) link checks) while
+  // the hero is scrolled out of view, instead of burning CPU forever.
+  new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (!raf) {
+          // The canvas's transform sat frozen at its stale pre-pause value
+          // while paused; .hero-nodes has a CSS transition on transform
+          // (for the one-time load reveal) that would otherwise ease that
+          // big stale->current jump over ~1s, reading as "nodes land in the
+          // wrong spot, then drift back". Snap it instantly first.
+          canvas.style.transition = 'none';
+          canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
+          void canvas.offsetHeight;
+          canvas.style.transition = '';
+          raf = requestAnimationFrame(step);
+        }
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    });
+  }).observe(heroEl);
 })();
 
 // Hero content (eyebrow/h1/sub/button, as one block): fades and blurs out
@@ -1193,6 +1228,7 @@ if (statsSection && statEls.length) {
   const CURSOR_PULL_DIST = 300;
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
   let nodes = [];
+  let raf = null;
   const mouse = { x: -9999, y: -9999, active: false };
   const cursorNode = { x: -9999, y: -9999 };
 
@@ -1353,7 +1389,7 @@ if (statsSection && statEls.length) {
     canvas.style.opacity = String(fadeOpacity);
     canvas.style.filter = entryBlur > 0.5 ? `blur(${entryBlur}px)` : 'none';
     canvas.style.transform = `translate(-50%,-50%) translateY(${parallaxY}px)`;
-    requestAnimationFrame(draw);
+    raf = requestAnimationFrame(draw);
   };
 
   statsPinEl.addEventListener('mousemove', (e) => {
@@ -1368,7 +1404,19 @@ if (statsSection && statEls.length) {
   });
   statsPinEl.addEventListener('mouseleave', () => { mouse.active = false; });
 
-  requestAnimationFrame(draw);
+  raf = requestAnimationFrame(draw);
+
+  // Same pause-when-offscreen treatment as the hero's node field.
+  new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (!raf) raf = requestAnimationFrame(draw);
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    });
+  }).observe(statsPinEl);
 })();
 
 let midLeadProgress = 0; // shared with the pulse-ring background below
@@ -1501,6 +1549,7 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   if (!canvas || reduceMotion) return;
 
   const ctx = canvas.getContext('2d');
+  let raf = null;
   const RING_COUNT = 6;
   const RADIUS_SCALE = 0.9; // resting radii stay inside this fraction of the canvas, leaving room for the pulse bulge + follow offset
   // The canvas element (in CSS) is physically 4x its old size, purely to
@@ -1601,11 +1650,13 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   }
   // Tracked on window (not just while hovering the pin) so the rings keep
   // leaning toward wherever the cursor actually is, capped by each ring's
-  // own follow distance either way.
+  // own follow distance either way. Only the raw pointer position is stored
+  // here (no layout read) — resolved against the live rect once per frame
+  // in draw() instead of on every mousemove.
+  let pendingClientX = null, pendingClientY = null;
   window.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left - rect.width / 2;
-    mouseY = e.clientY - rect.top - rect.height / 2;
+    pendingClientX = e.clientX;
+    pendingClientY = e.clientY;
   });
 
   const resize = () => {
@@ -1619,6 +1670,11 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
 
   const draw = (now) => {
     resize();
+    if (pendingClientX !== null) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = pendingClientX - rect.left - rect.width / 2;
+      mouseY = pendingClientY - rect.top - rect.height / 2;
+    }
     ctx.clearRect(0, 0, w, h);
 
     const maxRadius = Math.min(w, h) / 2 / CANVAS_OVERSIZE;
@@ -1669,9 +1725,14 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
         // pulse bulge and the follow offset both have headroom to expand
         // into without the outer ring's stroke clipping against the frame.
         const target = ((i + 1) / RING_COUNT) * maxRadius * RADIUS_SCALE;
-        const elapsed = now - settleStart - i * SETTLE_STAGGER;
-        const t = Math.min(Math.max(elapsed / SETTLE_DURATION, 0), 1);
-        let radius = easeOutQuart(t) * target * zoomScale;
+        // Rings used to grow in from center (staggered, eased) the first
+        // time this plays — that per-ring/per-node growth burst (lots of
+        // glow-sprite draws at once) was the actual source of the jank on
+        // first scroll-in. Now they're just drawn at full resting radius
+        // immediately; the canvas-level opacity/blur fade below (same one
+        // that already handles every re-entry after the first) is the only
+        // reveal, so first-time and every-time now look/perform the same.
+        let radius = target * zoomScale;
         let alpha = 0.22 * (1 - i / RING_COUNT * 0.6) * (1 - fadeT);
 
         pulses.forEach(p => {
@@ -1699,13 +1760,9 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
       const nodeAlpha = 0.5 * (1 - fadeT);
       if (nodeAlpha > 0.01) {
         floatNodes.forEach(n => {
-          // Nodes start growing in while the rings are still finishing up
-          // (not waiting for every last one to fully settle), each with its
-          // own small extra stagger on top of that.
-          const nodeElapsed = now - settleStart - RINGS_SETTLED_AT * 0.6 - n.settleDelay;
-          const nodeT = Math.min(Math.max(nodeElapsed / NODE_SETTLE_DURATION, 0), 1);
-          if (nodeT <= 0) return;
-          const nodeGrow = easeOutQuart(nodeT);
+          // Same as the rings above: drawn at full size immediately instead
+          // of growing in staggered — the canvas-level fade is the reveal.
+          const nodeGrow = 1;
 
           const ring = ringCenters[n.ring];
           // Slowly orbits its ring — the tether point below uses this same
@@ -1765,10 +1822,22 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     canvas.style.filter = (entryBlur > 0.5 || exitBlur > 0.5) ? `blur(${Math.max(entryBlur, exitBlur)}px)` : 'none';
     canvas.style.transform = 'translate(-50%,-50%)';
 
-    requestAnimationFrame(draw);
+    raf = requestAnimationFrame(draw);
   };
 
-  requestAnimationFrame(draw);
+  raf = requestAnimationFrame(draw);
+
+  // Same pause-when-offscreen treatment as the hero/stats node fields.
+  new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (!raf) raf = requestAnimationFrame(draw);
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    });
+  }).observe(pinEl);
 })();
 
 // Portfolio carousel: cards move into an inner track that's moved by
@@ -1905,6 +1974,7 @@ if (document.documentElement.classList.contains('pt-enter')) {
   const track = viewport && viewport.querySelector('.grid-track');
   const portfolioSection = document.querySelector('.portfolio');
   if (!track) return;
+  if (window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches) return;
   const DRIFT = 38;       // px/sec idle drift
   const EASE_BACK = 1.6;  // how quickly momentum settles back to the drift
   const cards = track.querySelectorAll('.card');
