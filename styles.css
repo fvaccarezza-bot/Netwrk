@@ -133,8 +133,24 @@ body.menu-open .menu a:hover{opacity:.6}
 .page-loader{position:fixed;inset:0;z-index:999;background:var(--bg);opacity:0;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
   transition:opacity .8s var(--ease)}
-.page-loader-pct{position:relative;z-index:1001;margin:0;font-family:var(--mono);font-size:14px;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--fg-dim)}
+.page-loader-ui{position:absolute;z-index:1001;left:clamp(24px, 4vw, 64px);right:clamp(24px, 4vw, 64px);bottom:clamp(24px, 4vw, 56px);
+  display:grid;grid-template-columns:1fr auto;align-items:end;row-gap:18px}
+.page-loader-label{font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim);
+  transition:opacity .5s var(--ease),transform .6s var(--ease),filter .5s var(--ease)}
+/* Odometer: each digit is a 0-9 strip translated inside a 1em mask. */
+.page-loader-num{display:flex;font-family:var(--sans);font-weight:300;font-size:clamp(44px, 5vw, 88px);line-height:1;
+  letter-spacing:-.04em;color:var(--fg);font-variant-numeric:tabular-nums}
+.pl-digit{display:block;height:1em;overflow:hidden}
+.pl-strip{display:flex;flex-direction:column;transform:translateY(calc(var(--d,0) * -1em));
+  transition:transform .45s cubic-bezier(.22,1,.36,1)}
+.pl-strip span{display:block;height:1em;text-align:center}
+/* Narrow glyphs (the "1" of 100) hug the next digit instead of leaving
+   the slack of a full-width cell between them. */
+.pl-digit:first-child .pl-strip span{text-align:right}
+.page-loader-num .pl-pct{font-size:.32em;margin:.12em 0 0 .08em;color:var(--fg-dim);letter-spacing:0}
+.page-loader-bar{grid-column:1 / -1;position:relative;height:1px;background:rgba(255,255,255,.12);overflow:hidden}
+.page-loader-bar i{position:absolute;inset:0;background:var(--fg);transform-origin:left;transform:scaleX(var(--p,0));
+  transition:transform .3s linear}
 body.is-loading .page-loader{opacity:1;pointer-events:auto}
 body.is-loading .hero-nodes{opacity:1;z-index:1000;-webkit-mask:none;mask:none;transition:none}
 body:not(.is-loading) .hero-nodes{transition:opacity 1.3s var(--ease),transform .9s var(--ease) .1s}
@@ -440,6 +456,10 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
    the whole grid still fades in together (above), this is just the
    per-card hover/tilt on top, same --mx/--my/--rx/--ry driven by the same
    cursor-tilt script. */
+.card .card-logo[src*="erebor"],
+.card .card-logo[src*="valinor"],
+.card .card-logo[src*="logo-cove"]{scale:.85} /* composes with each tier's transform */
+.co-investor-card .card-logo[src*="logo-goldcrest"]{scale:.59} /* composes with each tier's transform */
 .co-investor-card{position:relative;overflow:hidden;aspect-ratio:15/11;background:var(--bg-soft);
   display:flex;align-items:center;justify-content:center;padding:20px;
   --mx:50%;--my:50%;--rx:0deg;--ry:0deg;--bracket:var(--line);
@@ -734,8 +754,8 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 @media (min-width:1920px){
   :root{--wrap:1600px}
   .network-pin{overflow-y:hidden}
-  .network-logo{width:148px;height:148px}
-  .marquee-col{width:148px}
+  .network-logo{width:135px;height:135px}
+  .marquee-col{width:135px}
   .num,.cat{font-size:14px}
   body{font-size:14px}
   .h1-bold,.h1-light{font-size:85px}
@@ -802,6 +822,26 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 
 /* ---------- UW (true ultrawide, 2560px+): inherits the Normal block above as
    its base; add overrides here only, don't touch the 1920 block. ---------- */
+/* ---------- Normal only (1920-2559): not inherited by UW ---------- */
+@media (min-width:1920px) and (max-width:2559.98px){
+  /* Shorter co-investor cards so eyebrow + grid + title + copy fit in one
+     viewport. max-height bumped by the ratio the content box shrank
+     (~327px -> 260px) so the logos keep their previous absolute size. */
+  .co-investor-card{aspect-ratio:auto;height:270px}
+  .co-investor-card .card-logo{max-height:60%;transform:scale(1.08)} /* 10% under the 1.2 shared 1920+ scale */
+  /* Portfolio cards: 500x300 instead of 500x500; max-height bumped
+     (460px -> 260px content box) so logos keep their previous size. */
+  .card{height:300px}
+  .card .card-logo{max-height:88%;transform:scale(1.02)} /* 15% under the 1.2 shared 1920+ scale */
+  /* Team: smaller photo drives a shorter card; type sizes untouched. */
+  .team-photo{width:260px;height:260px}
+  .menu a{font-size:50px}
+  /* Dead space after the outro = viewport minus the footer's height (6vw
+     top pad + full-width 1920/357 wordmark + ~40px bottom bar), so at full
+     scroll only the footer wordmark is on screen, no co-investors. */
+  .co-investors{padding-bottom:max(60px, calc(100vh - 6vw - 18.6vw - 40px))}
+}
+
 @media (min-width:2560px){
 }
 
@@ -854,9 +894,9 @@ body.has-cursor:has(.grid:hover) .cursor-dot,body.has-cursor:has(.grid:hover) .c
   opacity:.5;transition:width .7s var(--ease),opacity .7s var(--ease)}
 .carousel:hover .carousel-ind i{width:var(--tw,25%);opacity:1}
 
-/* ---------- Portfolio, retina: static grid, no pin/carousel — client wants
+/* ---------- Portfolio, retina + Normal + UW: static grid, no pin/carousel — client wants
    all 12 companies visible at once, fixed 4x3, no scroll. ---------- */
-@media (min-width:901px) and (max-width:1919.98px){
+@media (min-width:901px){
   .portfolio{height:auto}
   .portfolio-pin{position:relative;height:auto}
   .carousel{--gw:min(1600px, 94vw)}

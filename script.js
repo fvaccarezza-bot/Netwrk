@@ -41,33 +41,83 @@ if (!reduceMotion) {
       // Real progress readout — waits one frame first so every <img> the
       // rest of script.js builds (the logo marquee, etc.) already exists
       // in the DOM to be counted, not just what's in the static HTML.
-      const pctEl = loaderEl.querySelector('[data-loader-pct]');
-      if (pctEl) {
-        const imgs = Array.from(document.images);
-        const total = imgs.length || 1;
-        let loaded = 0;
-        const update = () => {
-          loaded++;
-          pctEl.textContent = String(Math.min(100, Math.round((loaded / total) * 100)));
-        };
-        imgs.forEach(img => {
-          if (img.complete) update();
-          else { img.addEventListener('load', update); img.addEventListener('error', update); }
-        });
-      }
+      const imgs = Array.from(document.images);
+      const total = imgs.length || 1;
+      const update = () => { loaderLoaded++; loaderReal = Math.min(1, loaderLoaded / total); };
+      imgs.forEach(img => {
+        if (img.complete) update();
+        else { img.addEventListener('load', update); img.addEventListener('error', update); }
+      });
     });
+
+    // Odometer counter: 3 digit strips rolled by transform. Each strip is a
+    // long monotonic run (digit k sits at index floor(v / 10^(2-k)), cells
+    // repeat 0-9), so 9 -> 0 keeps rolling up instead of rewinding down.
+    // The shown value eases toward max(real image progress, a time-based
+    // floor) so it always visibly counts up — cached loads would otherwise
+    // jump 0 -> 100.
+    let loaderLoaded = 0, loaderReal = 0, loaderShown = 0, loaderDone = false, onLoaderFull = null;
+    const pctEl = loaderEl.querySelector('[data-loader-pct]');
+    const barEl = loaderEl.querySelector('.page-loader-bar');
+    const strips = [];
+    if (pctEl) {
+      for (let k = 0; k < 3; k++) {
+        const digit = document.createElement('span');
+        digit.className = 'pl-digit';
+        const strip = document.createElement('span');
+        strip.className = 'pl-strip';
+        const cells = Math.floor(100 / Math.pow(10, 2 - k)) + 1;
+        let html = '';
+        for (let i = 0; i < cells; i++) html += `<span>${i % 10}</span>`;
+        strip.innerHTML = html;
+        digit.appendChild(strip);
+        pctEl.appendChild(digit);
+        strips.push(strip);
+      }
+      const pct = document.createElement('span');
+      pct.className = 'pl-pct';
+      pct.textContent = '%';
+      pctEl.appendChild(pct);
+    }
+    const renderCount = (v) => {
+      strips.forEach((strip, k) => strip.style.setProperty('--d', Math.floor(v / Math.pow(10, 2 - k))));
+      if (barEl) barEl.style.setProperty('--p', (v / 100).toFixed(3));
+    };
+    renderCount(0);
 
     // ?loader=5000 forces a longer minimum (ms) for testing, e.g.
     // index.html?loader=5000 — normal visits are unaffected.
     const loaderParam = parseInt(new URLSearchParams(location.search).get('loader'), 10);
     const MIN_LOADER_MS = Number.isFinite(loaderParam) ? loaderParam : 1600;
     const loadStart = performance.now();
+
+    const tickCount = () => {
+      const t = Math.min(1, (performance.now() - loadStart) / MIN_LOADER_MS);
+      const floor = (1 - Math.pow(1 - t, 2)) * 0.92;
+      const target = loaderDone ? 100 : Math.min(99, Math.max(loaderReal, floor) * 100);
+      loaderShown += (target - loaderShown) * 0.09;
+      if (target - loaderShown < 0.5) loaderShown = target;
+      const v = Math.floor(loaderShown);
+      renderCount(v);
+      if (v >= 100) { if (onLoaderFull) onLoaderFull(); return; }
+      requestAnimationFrame(tickCount);
+    };
+    requestAnimationFrame(tickCount);
+
+    // Exit sequence: counter lands on 100 -> loader fades out while the
+    // canvas slides home -> hero reveal fires once the page is uncovered.
     const release = () => {
       const wait = Math.max(0, MIN_LOADER_MS - (performance.now() - loadStart));
       setTimeout(() => {
-        document.body.classList.remove('is-loading');
-        nodesEl.style.setProperty('--loader-x', '0px');
-        setTimeout(() => { loaderEl.remove(); }, 900);
+        onLoaderFull = () => {
+          setTimeout(() => {
+            document.body.classList.remove('is-loading');
+            nodesEl.style.setProperty('--loader-x', '0px');
+            setTimeout(() => document.body.classList.add('hero-loaded'), 400);
+            setTimeout(() => { loaderEl.remove(); }, 900);
+          }, 250);
+        };
+        loaderDone = true;
       }, wait);
     };
     if (document.readyState === 'complete') release();
@@ -83,9 +133,13 @@ const smoothstep = (x) => x * x * (3 - 2 * x);
 // this just flips the trigger class one frame after the hidden state has
 // actually painted, so the transition is guaranteed to be visible instead
 // of possibly collapsing into the same frame as the initial paint).
-requestAnimationFrame(() => requestAnimationFrame(() => {
-  document.body.classList.add('hero-loaded');
-}));
+// While the page loader is up, the loader's exit sequence fires this
+// instead, so the reveal plays after the curtain lifts, not hidden under it.
+if (!document.body.classList.contains('is-loading')) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.body.classList.add('hero-loaded');
+  }));
+}
 
 // Custom cursor: small dot + a ring that trails with a delay, grows on
 // interactive elements. Skipped on touch/coarse-pointer devices.
@@ -1984,7 +2038,7 @@ if (document.documentElement.classList.contains('pt-enter')) {
   const track = viewport && viewport.querySelector('.grid-track');
   const portfolioSection = document.querySelector('.portfolio');
   if (!track) return;
-  if (window.matchMedia('(min-width:901px) and (max-width:1919.98px)').matches) return;
+  if (window.matchMedia('(min-width:901px)').matches) return;
   const DRIFT = 38;       // px/sec idle drift
   const EASE_BACK = 1.6;  // how quickly momentum settles back to the drift
   const cards = track.querySelectorAll('.card');

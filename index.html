@@ -24,8 +24,27 @@
 </head>
 <body>
 
+  <!-- Turn the loader on before first paint (script.js runs too late and
+       the half-loaded page flashes first). Mirrors script.js's
+       resolveReducedMotion(): no loader when motion is reduced. -->
+  <script>
+    (function () {
+      var reduce;
+      try {
+        var s = localStorage.getItem('nk-motion');
+        if (s === 'no-preference') reduce = false;
+        else if (s === 'reduce') reduce = true;
+      } catch (e) {}
+      if (reduce === undefined) reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce) document.body.classList.add('is-loading', 'motion-on');
+    })();
+  </script>
   <div class="page-loader" aria-hidden="true">
-    <p class="page-loader-pct">Loading <span data-loader-pct>0</span>%</p>
+    <div class="page-loader-ui">
+      <span class="page-loader-label">Loading</span>
+      <span class="page-loader-num" data-loader-pct></span>
+      <span class="page-loader-bar"><i></i></span>
+    </div>
   </div>
 
   <header class="header">
