@@ -150,10 +150,20 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
     const target = document.querySelector(link.getAttribute('href'));
     if (!target) return;
     e.preventDefault();
+    let dest = target;
+    if (link.getAttribute('href') === '#network') {
+      // Landing right at the pin's top shows the marquee still
+      // collapsed/closed — jump partway into its scroll range instead so
+      // the curtain is already open and the logos already grown in.
+      const scrollable = target.offsetHeight - window.innerHeight;
+      if (scrollable > 0) dest = target.offsetTop + scrollable * 0.6;
+    }
     if (lenis) {
-      lenis.scrollTo(target, { duration: 1.9, easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)) });
+      lenis.scrollTo(dest, { duration: 1.9, easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)) });
+    } else if (typeof dest === 'number') {
+      window.scrollTo({ top: dest, behavior: 'smooth' });
     } else {
-      target.scrollIntoView({ behavior: 'smooth' });
+      dest.scrollIntoView({ behavior: 'smooth' });
     }
   });
 });

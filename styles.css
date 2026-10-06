@@ -603,6 +603,13 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   /* 20% smaller than the shared .card-logo scale (portfolio untouched) —
      same fluid formula, just multiplied down, frame/card size unchanged. */
   .co-investor-card .card-logo{transform:scale(calc(0.72 * clamp(1.15, calc(3.4 - (75vw / 640px)), 1.9)))}
+  /* Shorter frames (wider aspect) so the eyebrow, grid, title and copy all
+     fit in one screen instead of needing a scroll — max-height below is
+     bumped up by the same ratio the frame shrunk, so the logos render at
+     their original absolute size instead of shrinking along with the box
+     (max-height:50% is relative to the card's own height). */
+  .co-investor-card{aspect-ratio:1.8/1}
+  .co-investor-card .card-logo{max-height:66%}
   /* Extra dead scroll so the "One thesis / Multiple partners" outro has
      fully scrolled past before the giant footer wordmark comes into view —
      otherwise both were visible in the same viewport at once. */
@@ -821,12 +828,14 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 }
 
 /* ---------- Page transition (home -> all logos) ---------- */
+/* Same slide-down-and-fade as .menu, instead of the old horizontal
+   clip-path wipe, so the "View All" transition reads as the same effect. */
 .pt-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);pointer-events:none;
-  clip-path:inset(0 100% 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1)}
-.pt-overlay.is-on{clip-path:inset(0 0 0 0)}
+  opacity:0;transform:translateY(-100%);transition:opacity .7s var(--ease),transform .9s var(--ease)}
+.pt-overlay.is-on{opacity:1;transform:translateY(0)}
 html.pt-enter body::after{content:"";position:fixed;inset:0;z-index:2000;background:var(--bg);pointer-events:none;
-  clip-path:inset(0 0 0 0);transition:clip-path .8s cubic-bezier(.76,0,.24,1) .1s}
-html.pt-enter.pt-reveal body::after{clip-path:inset(0 0 0 100%)}
+  opacity:1;transform:translateY(0);transition:opacity .7s var(--ease),transform .9s var(--ease) .1s}
+html.pt-enter.pt-reveal body::after{opacity:0;transform:translateY(-100%)}
 .logo-tile{opacity:0;transform:translateY(28px) scale(.94);filter:blur(10px);
   transition:opacity .9s var(--ease) var(--d,0s),transform 1.1s var(--ease) var(--d,0s),filter .9s var(--ease) var(--d,0s),background .3s var(--ease)}
 .logo-tile.is-in{opacity:1;transform:none;filter:none}
