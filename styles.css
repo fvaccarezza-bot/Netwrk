@@ -843,6 +843,8 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
 }
 
 @media (min-width:2560px){
+  .network-logo{width:150px;height:150px}
+  .marquee-col{width:150px}
 }
 
 /* ---------- Responsive ---------- */
