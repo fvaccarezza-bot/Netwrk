@@ -1,0 +1,46 @@
+/* ==========================================================================
+   v2 overrides — only loaded by index-v2.html (body.v2). Removed content is
+   hidden here (.v2-hidden), not deleted from the markup.
+   ========================================================================== */
+
+.v2 .v2-hidden{display:none !important}
+
+/* ---------- Hero: button + 2nd sub line hidden → bigger node graphic ---------- */
+.v2 .hero-nodes{max-width:92vw;max-height:100vh}
+@media (min-width:1920px){
+  .v2 .hero-nodes{max-width:96vw}
+}
+
+/* ---------- About: "Philosophy" + 3-step reveal (v2.js toggles .is-on) ---------- */
+.v2 .about-copy .about-eyebrow{color:#fff;margin:0 0 30px}
+.v2 .about-step{opacity:0;filter:blur(14px);transform:translateY(18px);
+  transition:opacity .9s var(--ease),filter .9s var(--ease),transform .9s var(--ease)}
+.v2 .about-step.is-on{opacity:1;filter:blur(0);transform:translateY(0)}
+@media (prefers-reduced-motion: reduce){
+  body.v2:not(.motion-on) .about-step{opacity:1;filter:none;transform:none;transition:none}
+}
+
+/* ---------- Mid-lead: statements hidden, team cards enter straight away ---------- */
+.v2 .mid-lead{height:260vh}
+.v2 .team-bio{display:none}
+.v2 .mid-lead-pulse{display:none}
+
+/* ---------- Portfolio: 4 x 3, all 12 in one viewport (desktop only) ---------- */
+@media (min-width:901px){
+  .v2 .grid-track{grid-template-columns:repeat(4,1fr)}
+  .v2 .grid .card{width:auto;flex:none;aspect-ratio:auto;
+    height:clamp(150px, calc((100vh - 380px) / 3), 300px)}
+}
+/* Stats (which Portfolio was pulled up into) is hidden here. */
+@media (min-width:1920px){
+  .v2 .portfolio{margin-top:200px}
+}
+
+/* ---------- Co-Investors: 8 firms, 4 x 2 ---------- */
+@media (min-width:901px){
+  .v2 .co-investors-grid{grid-template-columns:repeat(4,1fr)}
+}
+.v2 .co-investor-card .card-logo{scale:1.1}
+.v2 .card-logo[src*="logo-goldcrest"]{scale:.72}
+.v2 .card-logo[src*="logo-lux"]{scale:.7}
+.v2 .card-logo[src*="logo-a16z"]{scale:.46} /* composes with each tier's transform */
