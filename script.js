@@ -211,6 +211,10 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
       // the curtain is already open and the logos already grown in.
       const scrollable = target.offsetHeight - window.innerHeight;
       if (scrollable > 0) dest = target.offsetTop + scrollable * 0.6;
+    } else if (link.getAttribute('href') === '#team') {
+      // Same idea for the team pin (index-v2): land with the cards already in.
+      const scrollable = target.offsetHeight - window.innerHeight;
+      if (scrollable > 0) dest = target.offsetTop + scrollable * 0.95;
     }
     if (lenis) {
       lenis.scrollTo(dest, { duration: 1.9, easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)) });
@@ -748,6 +752,15 @@ const ALL_NETWORK_LOGOS = [
   const mouse = { x: -9999, y: -9999, active: false };
   // Cursor node trails the real pointer with a short eased delay ("drag" feel)
   const cursorNode = { x: -9999, y: -9999 };
+  // index-v2 only (body.v2): fake 3D — each node gets a depth and is drawn
+  // with a mouse-driven parallax offset (near and far layers slide opposite
+  // ways) plus depth-scaled size/brightness. The physics stay flat/untouched.
+  const HERO_3D = document.body.classList.contains('v2');
+  const HERO_3D_SHIFT = 70; // px of parallax between the nearest and mid layer
+  const tilt = { x: 0, y: 0, tx: 0, ty: 0 };
+  const px = (n) => HERO_3D ? n.x + tilt.x * HERO_3D_SHIFT * (n.depth - 0.85) : n.x;
+  const py = (n) => HERO_3D ? n.y + tilt.y * HERO_3D_SHIFT * (n.depth - 0.85) : n.y;
+  const depthK = (d) => HERO_3D ? 0.45 + 0.45 * d : 1; // near = bigger/brighter
 
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
@@ -786,6 +799,7 @@ const ALL_NETWORK_LOGOS = [
           vx: (Math.random() - 0.5) * 0.35,
           vy: (Math.random() - 0.5) * 0.35,
           size: sizeBase + Math.random() * sizeRange,
+          depth: 0.35 + Math.random(),
           reveal: reduceMotion ? 1 : 0,
         });
       }
@@ -819,11 +833,11 @@ const ALL_NETWORK_LOGOS = [
         if (linkReveal <= 0) continue;
         const dist = Math.hypot(a.x - b.x, a.y - b.y);
         if (dist < LINK_DIST) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST) * linkReveal})`;
+          ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST) * linkReveal * depthK((a.depth + b.depth) / 2)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
+          ctx.moveTo(px(a), py(a));
+          ctx.lineTo(px(b), py(b));
           ctx.stroke();
         }
       }
@@ -854,8 +868,8 @@ const ALL_NETWORK_LOGOS = [
         }
       }
       ctx.beginPath();
-      ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.arc(px(n), py(n), size * depthK(n.depth), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, alpha * depthK(n.depth))})`;
       if (glow > 0) {
         ctx.shadowBlur = glow * 22;
         ctx.shadowColor = 'rgba(255,255,255,.95)';
@@ -880,7 +894,27 @@ const ALL_NETWORK_LOGOS = [
     return;
   }
 
+  // The CSS transition on .hero-nodes only exists for the loader exit. Left
+  // on, it also eases the per-frame scroll transform/opacity below, so the
+  // canvas trails the scroll and lands off-position when you come back up.
+  // Dropped for good once the loader has been gone long enough to finish it.
+  let settled = false, unloadedAt = null;
+  const settle = (now) => {
+    if (settled || document.body.classList.contains('is-loading')) return;
+    if (unloadedAt === null) unloadedAt = now;
+    if (now - unloadedAt > 1500) { canvas.style.transition = 'none'; settled = true; }
+  };
+
   const step = () => {
+    settle(performance.now());
+    if (HERO_3D) {
+      if (pendingClientX !== null) {
+        tilt.tx = pendingClientX / window.innerWidth - 0.5;
+        tilt.ty = pendingClientY / window.innerHeight - 0.5;
+      }
+      tilt.x += (tilt.tx - tilt.x) * 0.06;
+      tilt.y += (tilt.ty - tilt.y) * 0.06;
+    }
     canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
     if (pendingClientX !== null) {
       const heroRect = heroEl.getBoundingClientRect();
@@ -980,7 +1014,7 @@ const ALL_NETWORK_LOGOS = [
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(cursorNode.x, cursorNode.y);
-          ctx.lineTo(n.x, n.y);
+          ctx.lineTo(px(n), py(n));
           ctx.stroke();
         }
       });
@@ -1034,7 +1068,7 @@ const ALL_NETWORK_LOGOS = [
           canvas.style.transition = 'none';
           canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
           void canvas.offsetHeight;
-          canvas.style.transition = '';
+          if (!settled) canvas.style.transition = '';
           raf = requestAnimationFrame(step);
         }
       } else if (raf) {
