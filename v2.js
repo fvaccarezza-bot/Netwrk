@@ -78,11 +78,15 @@
   const ss = (x) => x * x * (3 - 2 * x);
   const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
   const ENTER_START = 0.08;                // seed node starts rising in from below
-  const GROW_START = 0.3, GROW_END = 0.72; // section progress over which it spreads
+  // Virtual timeline q (see progress()): 0 -> 0.24 while the section scrolls
+  // in (seed rises from 0.08), 0.24 -> 0.56 across the pinned runway (the web
+  // builds), 0.56 -> 0.76 while Co-Investors rises over it (web dims).
+  const GROW_START = 0.24, GROW_END = 0.56; // section progress over which it spreads
   const FOCAL = 900;                        // perspective focal length (px)
   let w = 0, h = 0, R = 0, linkDist = 1, nodes = [], edges = [];
   let mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let p = 0, pSmooth = 0, visible = false;
+  const off = { x: 0, y: 0 }; // eased recentering offset (see draw)
 
   const build = () => {
     const r = canvas.getBoundingClientRect();
@@ -147,10 +151,15 @@
     });
   };
 
+  const runway = section.querySelector('.v2-weave-runway');
+  const coEl = section.querySelector('.co-investors');
   const progress = () => {
-    const r = section.getBoundingClientRect();
-    const total = section.offsetHeight + window.innerHeight;
-    return clamp01((window.innerHeight - r.top) / total);
+    const vh = window.innerHeight;
+    const top = section.getBoundingClientRect().top;
+    if (top > 0) return 0.24 * clamp01(1 - top / vh);
+    const b = clamp01(-top / Math.max(runway ? runway.offsetHeight : vh, 1));
+    const c = coEl ? clamp01(1 - coEl.getBoundingClientRect().top / vh) : 0;
+    return 0.24 + 0.32 * b + 0.2 * c;
   };
 
   const draw = (now) => {
@@ -163,9 +172,10 @@
     const grow = clamp01((q - GROW_START) / (GROW_END - GROW_START)) * 1.02;
     // Before anything grows, the lone seed node scrolls up into the center.
     const enter = reduce ? 1 : ss(clamp01((q - ENTER_START) / (GROW_START - ENTER_START)));
-    const out = reduce ? 0 : ss(clamp01((q - 0.82) / 0.14));
+    // Blurs and fades out as Co-Investors rises over it.
+    const out = reduce ? 0 : ss(clamp01((q - 0.56) / 0.18));
     canvas.style.opacity = String(1 - out);
-    canvas.style.filter = out > 0.01 ? `blur(${out * 12}px)` : 'none';
+    canvas.style.filter = out > 0.01 ? `blur(${out * 14}px)` : 'none';
 
     // Camera: slow idle spin + scroll-driven turn, tilt follows the mouse,
     // and a push-in through the section.
@@ -188,6 +198,20 @@
       return { x: w / 2 + x1 * s, y: h / 2 + y1 * s + rise, s,
         fog: clamp01(0.25 + (s - 0.45) * 1.1) }; // nearer = brighter
     });
+
+    // Keep what's been revealed so far centered on screen: the random 3D
+    // cloud grows lopsided and turns, so its mass drifts off to one side.
+    // Eased toward the centroid of the visible nodes (none -> no offset).
+    if (!reduce) {
+      let sx = 0, sy = 0, cnt = 0;
+      nodes.forEach((n, i) => {
+        if (i !== 0 && n.time <= grow) { sx += pts[i].x; sy += pts[i].y; cnt++; } // seed excluded so its rise-in isn't cancelled
+      });
+      const tx = cnt ? sx / cnt - w / 2 : 0, ty = cnt ? sy / cnt - h / 2 : 0;
+      off.x += (tx - off.x) * 0.06;
+      off.y += (ty - off.y) * 0.06;
+      pts.forEach(P => { P.x -= off.x; P.y -= off.y; });
+    }
 
     ctx.clearRect(0, 0, w, h);
     edges.forEach(e => {

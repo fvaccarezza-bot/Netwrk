@@ -23,6 +23,11 @@
 /* ---------- Mid-lead: statements hidden, team cards enter straight away ---------- */
 .v2 .mid-lead{height:420vh} /* rings first (0–0.7), team cards from 0.5 */
 .v2 .team-bio{display:none}
+/* The rings canvas is deliberately oversized (up to 360vw) for its zoom-out;
+   uncontained it made the whole document ~480px wider than the viewport on
+   UW, so any stray horizontal scroll shifted the page sideways. The pin now
+   spans the viewport and clips it there (same visual edge as before). */
+.v2 .mid-lead-pin{width:100vw;margin-left:calc(50% - 50vw);overflow:hidden}
 /* "The Team" sits in the middle of the rings (same eyebrow type as "Our Network"), then clears out as the cards come in — v2.js drives
    opacity/blur/scale off the pin's progress. */
 .v2 .mid-lead-title{position:absolute;top:50%;left:50%;z-index:1;margin:0;white-space:nowrap;font-weight:400; /* h2 default is bold */
@@ -49,6 +54,16 @@
    box rule sizes them all evenly — the per-logo/per-tier scale patches in
    styles.css (written for the padded originals) are neutralised here. */
 .v2 .grid .card .card-logo{max-width:62%;max-height:38%;transform:none;scale:none}
+/* Optical balance: compact/heavy marks pulled down, thin wide wordmarks
+   nudged up, so they all read at about Prometheus' visual weight. */
+.v2 .grid .card .card-logo[src*="logo-spacex"]{scale:1.12}
+.v2 .grid .card .card-logo[src*="logo-hypercard"]{scale:1.06}
+.v2 .grid .card .card-logo[src*="logo-deep"]{scale:.9}
+.v2 .grid .card .card-logo[src*="logo-coframe"]{scale:.9}
+.v2 .grid .card .card-logo[src*="logo-valinor"]{scale:.95}
+.v2 .grid .card .card-logo[src*="logo-mike"]{scale:.94}
+.v2 .grid .card .card-logo[src*="logo-arena"]{scale:.74}
+.v2 .grid .card .card-logo[src*="logo-cove"]{scale:.7}
 /* Stats (which Portfolio was pulled up into) is hidden here. */
 @media (min-width:1920px){
   .v2 .portfolio{margin-top:200px}
@@ -67,20 +82,23 @@
 .v2 .footer-contact{background:var(--bg);text-align:center;
   padding:clamp(220px, -4px + 17.5vw, 336px) 24px clamp(24px, 8px + 1.25vw, 32px)}
 .v2 .footer-contact .eyebrow{margin:0 0 clamp(20px, 4px + 1.25vw, 28px)}
-.v2 .footer-contact-label,
-.v2 .footer-contact-mail{font-family:var(--mono);font-size:clamp(12px, 2px + 0.78vw, 17px);line-height:1.6}
-.v2 .footer-contact-label{margin:0 0 4px;color:var(--fg-dim)}
-.v2 .footer-contact-mail{color:var(--fg);
-  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.25em;
-  transition:opacity .3s var(--ease)}
-.v2 .footer-contact-mail:hover{opacity:.6}
+.v2 .footer-contact-label{margin:0 0 4px;font-family:var(--mono);font-size:clamp(12px, 2px + 0.78vw, 17px);color:var(--fg-dim)}
+/* Mail reuses the team "View Profile" link as-is (type, roll-up hover, arrow). */
+.v2 .footer-contact .footer-contact-mail{margin-top:0;font-size:clamp(14px, 6px + 0.63vw, 16px)}
 
 /* ---------- Weave between Portfolio and Co-Investors (v2.js) ----------
    Scattered nodes that get wired together, left to right, as you scroll
    through the pin, then dissolve before Co-Investors. */
-.v2 .v2-weave{position:relative;height:240vh;width:100vw;margin-left:calc(50% - 50vw)}
-.v2 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden}
+/* Co-Investors lives inside this section, after a 200vh runway: the web
+   builds while pinned over the runway, then Co-Investors scrolls up over it
+   and the pin holds behind it to the very end — so the canvas only releases
+   when Co-Investors' bottom meets the footer, which covers its edge. */
+.v2 .v2-weave{position:relative}
+.v2 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
+  width:100vw;margin-left:calc(50% - 50vw)}
+.v2 .v2-weave-runway{height:200vh}
+.v2 .v2-weave .co-investors{position:relative;z-index:1}
 .v2 .v2-weave-canvas{display:block;width:100%;height:100%}
 @media (prefers-reduced-motion: reduce){
-  body.v2:not(.motion-on) .v2-weave{height:100vh}
+  body.v2:not(.motion-on) .v2-weave-runway{height:0}
 }
