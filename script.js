@@ -736,8 +736,25 @@ const ALL_NETWORK_LOGOS = [
   const CURSOR_PULL_DIST = 300;
   const PARALLAX_SPEED = 0.15; // background moves at 15% of scroll speed (more visible drift)
   const LOAD_IN_MS = 1400; // node field itself fades in on page load, alongside the text
-  const WAVE_SPAN = 1000; // ms for the reveal wave to sweep from center to the furthest node
-  const NODE_FADE = 450; // ms for one node's own fade/grow-in once the wave reaches it
+  // Entrance (same idea as v2's weave): only a seed node shows while the
+  // loader is up; once it lifts, links grow out of every lit node to its
+  // neighbours (arrival = shortest path distance from the seed) and each
+  // node is cast outward from the seed as it lands.
+  const WAVE_SPAN = 1800; // ms for the growth to reach the furthest node
+  const NODE_FADE = 350; // ms for one node's own fade/grow-in once a link reaches it
+  const CAST_MS = 750; // ms for a node to travel out from its contracted spot to home
+  // 3D entrance: nodes get a z from their depth and are perspective-
+  // projected; the web starts turned and pushed back, then swings flat and
+  // comes forward, landing exactly on the 2D layout (so physics are untouched).
+  const ENTRANCE_3D_MS = 3600; // long ease-out (quint): most of the turn early, a very soft landing
+  const easeOutQuint = (x) => 1 - Math.pow(1 - x, 5);
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const ROT_Y0 = 0.9, ROT_X0 = 0.35; // starting turn (rad)
+  const Z_SPAN = 900, CAM0 = 700, FOCAL = 900;
+  const REVEAL_BLUR = 12, REVEAL_BLUR_MS = 1400; // whole field sharpens from a blur
+  const IDLE_ROT_Y = 0.12, IDLE_ROT_X = 0.05; // resting sway amplitude (rad)
+  const MOUSE_ROT_Y = 0.25, MOUSE_ROT_X = 0.18; // tilt per half-viewport of mouse travel (rad)
+  const rot = { x: 0, y: 0, tx: 0, ty: 0 };
   const ENTRANCE_GLOW_DECAY_MS = 900; // once a node finishes growing in, its glow fades out over this long
   const PULSE_INTERVAL = 4000; // ms between recurring ripples through the field
   const PULSE_SWEEP_MS = 1800; // ms for one ripple to sweep from center to the furthest node — slow
@@ -747,6 +764,8 @@ const ALL_NETWORK_LOGOS = [
 
   let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
   const loadStart = performance.now();
+  let revealStart = null; // set the first frame the page loader is gone
+  let seedNode = null;
   let nodes = [];
   let raf = null;
   const mouse = { x: -9999, y: -9999, active: false };
@@ -758,8 +777,13 @@ const ALL_NETWORK_LOGOS = [
   const HERO_3D = document.body.classList.contains('v2');
   const HERO_3D_SHIFT = 70; // px of parallax between the nearest and mid layer
   const tilt = { x: 0, y: 0, tx: 0, ty: 0 };
-  const px = (n) => HERO_3D ? n.x + tilt.x * HERO_3D_SHIFT * (n.depth - 0.85) : n.x;
-  const py = (n) => HERO_3D ? n.y + tilt.y * HERO_3D_SHIFT * (n.depth - 0.85) : n.y;
+  const bx = (n) => HERO_3D ? n.x + tilt.x * HERO_3D_SHIFT * (n.depth - 0.85) : n.x;
+  const by = (n) => HERO_3D ? n.y + tilt.y * HERO_3D_SHIFT * (n.depth - 0.85) : n.y;
+  // Drawn position/scale: computed once per frame in step() (cast-out from
+  // the seed + the entrance's 3D turn); plain positions when not animating.
+  const px = (n) => (n.drawX !== undefined ? n.drawX : bx(n));
+  const py = (n) => (n.drawY !== undefined ? n.drawY : by(n));
+  const fogK = (n) => (n.drawS !== undefined ? Math.min(1, 0.3 + 0.7 * n.drawS) : 1); // farther = dimmer
   const depthK = (d) => HERO_3D ? 0.45 + 0.45 * d : 1; // near = bigger/brighter
 
   const resize = () => {
@@ -801,12 +825,14 @@ const ALL_NETWORK_LOGOS = [
           size: sizeBase + Math.random() * sizeRange,
           depth: 0.35 + Math.random(),
           reveal: reduceMotion ? 1 : 0,
+          cast: 1,
         });
       }
     }
 
-    // Entrance wave: nodes wake up in a ring expanding out from the field's
-    // own center, instead of the whole mesh just fading in flat together.
+    // Entrance: grows out of the node nearest the field's center, along the
+    // link graph — arrival time = shortest path distance from that seed
+    // (Dijkstra, small n), so links visibly travel node to node.
     if (!reduceMotion) {
       const cx = w / 2, cy = h / 2;
       let maxDist = 1;
@@ -815,8 +841,35 @@ const ALL_NETWORK_LOGOS = [
         if (n.dist > maxDist) maxDist = n.dist;
       });
       maxNodeDist = maxDist;
-      nodes.forEach(n => {
-        n.waveDelay = (n.dist / maxDist) * WAVE_SPAN;
+      seedNode = nodes.reduce((a, b) => (b.dist < a.dist ? b : a));
+      seedNode.depth = 0.85; // z = 0: stays put while the web turns around it
+
+      const adj = nodes.map(() => []);
+      nodes.forEach((a, i) => {
+        let best = -1, bestD = Infinity;
+        nodes.forEach((b, j) => {
+          if (i === j) return;
+          const d = Math.hypot(a.homeX - b.homeX, a.homeY - b.homeY);
+          if (d < LINK_DIST) adj[i].push({ j, d });
+          if (d < bestD) { bestD = d; best = j; }
+        });
+        if (best >= 0) { adj[i].push({ j: best, d: bestD }); adj[best].push({ j: i, d: bestD }); }
+      });
+      const time = nodes.map(n => (n === seedNode ? 0 : Infinity));
+      const done = new Set();
+      while (done.size < nodes.length) {
+        let u = -1;
+        time.forEach((t, i) => { if (!done.has(i) && (u < 0 || t < time[u])) u = i; });
+        if (!isFinite(time[u])) break;
+        done.add(u);
+        adj[u].forEach(({ j, d }) => { if (time[u] + d < time[j]) time[j] = time[u] + d; });
+      }
+      const maxT = Math.max(...time.filter(isFinite)) || 1;
+
+      nodes.forEach((n, i) => {
+        // Unreachable leftovers (rare) just land last, by plain distance.
+        n.waveDelay = (isFinite(time[i]) ? time[i] / maxT : 1 + n.dist / maxDist * 0.1) * WAVE_SPAN;
+        n.cast = n === seedNode ? 1 : 0;
         n.lastPulseCycle = -1;
         // Recurring ripple sweeps left to right (by x position), independent
         // of the center-out entrance wave above.
@@ -825,27 +878,46 @@ const ALL_NETWORK_LOGOS = [
     }
   };
 
+  // growElapsed: ms since the entrance started (null = finished / reduced
+  // motion, links drawn whole). While growing, each link extends from its
+  // earlier-lit end toward the later one, with a glowing tip.
+  let growElapsed = null;
   const drawLinks = () => {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j];
-        const linkReveal = Math.min(a.reveal, b.reveal);
-        if (linkReveal <= 0) continue;
+        let a = nodes[i], b = nodes[j];
         const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        if (dist < LINK_DIST) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST) * linkReveal * depthK((a.depth + b.depth) / 2)})`;
-          ctx.lineWidth = 1;
+        if (dist >= LINK_DIST) continue;
+        let k = 1;
+        if (growElapsed !== null) {
+          if (b.waveDelay < a.waveDelay) { const t = a; a = b; b = t; }
+          const t0 = a.waveDelay, t1 = Math.max(b.waveDelay, t0 + 60);
+          k = Math.min(Math.max((growElapsed - t0) / (t1 - t0), 0), 1);
+          if (k <= 0) continue;
+        }
+        const ax = px(a), ay = py(a);
+        const x = ax + (px(b) - ax) * k, y = ay + (py(b) - ay) * k;
+        ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - dist / LINK_DIST) * (0.4 + 0.6 * k) * depthK((a.depth + b.depth) / 2) * (fogK(a) + fogK(b)) / 2})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        if (k < 1) {
+          const g = ctx.createRadialGradient(x, y, 0, x, y, 7);
+          g.addColorStop(0, 'rgba(255,255,255,.9)');
+          g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.moveTo(px(a), py(a));
-          ctx.lineTo(px(b), py(b));
-          ctx.stroke();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     }
   };
 
   const drawNodes = () => {
-    const entranceNow = performance.now() - loadStart;
+    const entranceNow = revealStart === null ? 0 : performance.now() - revealStart;
     nodes.forEach(n => {
       if (n.reveal <= 0) return;
       // Grows from nothing (not just a subtle size bump) alongside the fade.
@@ -859,7 +931,7 @@ const ALL_NETWORK_LOGOS = [
       const entranceGlow = smoothstep(Math.min(Math.max(1 - settleElapsed / ENTRANCE_GLOW_DECAY_MS, 0), 1));
       if (entranceGlow > glow) glow = entranceGlow;
       if (mouse.active) {
-        const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+        const dist = Math.hypot(mouse.x - px(n), mouse.y - py(n));
         if (dist < CURSOR_LINK_DIST) {
           const boost = 1 - dist / CURSOR_LINK_DIST;
           size += boost * 1.5;
@@ -868,8 +940,8 @@ const ALL_NETWORK_LOGOS = [
         }
       }
       ctx.beginPath();
-      ctx.arc(px(n), py(n), size * depthK(n.depth), 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, alpha * depthK(n.depth))})`;
+      ctx.arc(px(n), py(n), size * depthK(n.depth) * (n.drawS !== undefined ? n.drawS : 1), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, alpha * depthK(n.depth) * fogK(n))})`;
       if (glow > 0) {
         ctx.shadowBlur = glow * 22;
         ctx.shadowColor = 'rgba(255,255,255,.95)';
@@ -916,7 +988,13 @@ const ALL_NETWORK_LOGOS = [
       tilt.y += (tilt.ty - tilt.y) * 0.06;
     }
     canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
-    if (pendingClientX !== null) {
+    // Hover (cursor node, links, pull) stays off until the entrance has
+    // finished, so the two effects don't fight each other.
+    const entranceDone = revealStart !== null &&
+      performance.now() - revealStart > Math.max(WAVE_SPAN * 1.2 + CAST_MS, ENTRANCE_3D_MS * 0.7);
+    if (!entranceDone) {
+      mouse.active = false;
+    } else if (pendingClientX !== null) {
       const heroRect = heroEl.getBoundingClientRect();
       if (pendingClientY < heroRect.top || pendingClientY > heroRect.bottom) {
         mouse.active = false;
@@ -944,14 +1022,28 @@ const ALL_NETWORK_LOGOS = [
     const now = performance.now();
     const loadIn = smoothstep(Math.min((now - loadStart) / LOAD_IN_MS, 1));
     canvas.style.opacity = String((1 - heroFadeProgress) * loadIn);
-    // Each node's own reveal — a wave sweeping out from center, computed
-    // once per frame and reused by both drawLinks and drawNodes below.
-    const elapsed = now - loadStart;
+    // Entrance clock starts once the page loader is gone (straight away on
+    // pages without one). Until then only the seed shows, softly breathing.
+    if (revealStart === null && !document.body.classList.contains('is-loading')) revealStart = now;
+    const elapsed = revealStart === null ? -1 : now - revealStart;
     nodes.forEach(n => {
+      if (revealStart === null) {
+        n.reveal = n === seedNode ? 2.2 + 0.4 * Math.sin(now / 320) : 0; // oversized: sits under the entrance blur
+        return;
+      }
       const t = (elapsed - n.waveDelay) / NODE_FADE;
-      n.reveal = smoothstep(Math.min(Math.max(t, 0), 1));
+      n.reveal = n === seedNode
+        ? 1 + 1.2 * (1 - smoothstep(Math.min(elapsed / 600, 1))) // eases down from its loader size
+        : smoothstep(Math.min(Math.max(t, 0), 1));
+      n.cast = n === seedNode ? 1 : easeOutCubic(Math.min(Math.max((elapsed - n.waveDelay) / CAST_MS, 0), 1));
     });
-    canvas.style.filter = heroFadeProgress > 0 ? `blur(${heroFadeProgress * 16}px)` : 'none';
+    growElapsed = (revealStart !== null && elapsed > WAVE_SPAN * 1.2 + CAST_MS) ? null : elapsed;
+    // Entrance blur: held while the loader is up (the seed reads as a soft
+    // glow), then the whole field sharpens as the web grows in.
+    const revealBlur = revealStart === null ? REVEAL_BLUR
+      : REVEAL_BLUR * (1 - smoothstep(Math.min(elapsed / REVEAL_BLUR_MS, 1)));
+    const blurPx = Math.max(heroFadeProgress * 16, revealBlur);
+    canvas.style.filter = blurPx > 0.1 ? `blur(${blurPx}px)` : 'none';
     ctx.clearRect(0, 0, w, h);
 
     if (mouse.active) {
@@ -1004,11 +1096,46 @@ const ALL_NETWORK_LOGOS = [
       }
     });
 
+    // Drawn positions for this frame: cast out from the seed, then the 3D
+    // entrance projection (identity once e3 reaches 1).
+    const e3 = revealStart === null ? 0 : easeOutQuint(Math.min(elapsed / ENTRANCE_3D_MS, 1));
+    const inv = 1 - e3;
+    // After the entrance it keeps living in 3D: a slow idle sway plus a
+    // tilt that follows the mouse (eased), blended in as the entrance ends.
+    if (pendingClientX !== null) {
+      rot.tx = pendingClientX / window.innerWidth - 0.5;
+      rot.ty = pendingClientY / window.innerHeight - 0.5;
+    }
+    rot.x += (rot.tx - rot.x) * 0.05;
+    rot.y += (rot.ty - rot.y) * 0.05;
+    const ts = now / 1000;
+    const ry = ROT_Y0 * inv + e3 * (IDLE_ROT_Y * Math.sin(ts * 0.25) + rot.x * MOUSE_ROT_Y);
+    const rx = ROT_X0 * inv + e3 * (IDLE_ROT_X * Math.sin(ts * 0.19 + 1) + rot.y * MOUSE_ROT_X);
+    const zK = Z_SPAN * (0.35 + 0.65 * inv); // full depth while turning in, shallower at rest
+    const cRY = Math.cos(ry), sRY = Math.sin(ry);
+    const cRX = Math.cos(rx), sRX = Math.sin(rx);
+    const sx0 = seedNode ? bx(seedNode) : 0, sy0 = seedNode ? by(seedNode) : 0;
+    nodes.forEach(n => {
+      let x = bx(n), y = by(n), s = 1;
+      if (seedNode && n.cast < 1) {
+        const k = 0.35 + 0.65 * n.cast;
+        x = sx0 + (x - sx0) * k;
+        y = sy0 + (y - sy0) * k;
+      }
+      const dx = x - cx, dy = y - cy, z = (n.depth - 0.85) * zK;
+      const x1 = dx * cRY + z * sRY, z1 = -dx * sRY + z * cRY;
+      const y1 = dy * cRX - z1 * sRX, z2 = dy * sRX + z1 * cRX;
+      s = FOCAL / Math.max(FOCAL + z2 + CAM0 * inv, 80);
+      x = cx + x1 * s;
+      y = cy + y1 * s;
+      n.drawX = x; n.drawY = y; n.drawS = s;
+    });
+
     drawLinks();
 
     if (mouse.active) {
       nodes.forEach(n => {
-        const dist = Math.hypot(cursorNode.x - n.x, cursorNode.y - n.y);
+        const dist = Math.hypot(cursorNode.x - px(n), cursorNode.y - py(n));
         if (dist < CURSOR_LINK_DIST) {
           ctx.strokeStyle = `rgba(255,255,255,${0.6 * (1 - dist / CURSOR_LINK_DIST)})`;
           ctx.lineWidth = 1;
