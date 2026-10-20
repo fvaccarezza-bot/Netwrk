@@ -21,8 +21,15 @@
 }
 
 /* ---------- Mid-lead: statements hidden, team cards enter straight away ---------- */
-.v2 .mid-lead{height:420vh} /* rings first (0–0.7), team cards from 0.5 */
+.v2 .mid-lead{height:420vh} /* rings first, team cards from 0.45 */
 .v2 .team-bio{display:none}
+/* Cards travel out of the rings' center and grow with scroll; each one is
+   uncovered by a circle mask from its own center only once they're apart
+   (script.js sets --slide-x, --slide-scale and --reveal 0..1). */
+.v2 .mid-lead-card-slot{transform:translate(calc(-50% + var(--slide-x, 0px)), -50%) scale(var(--slide-scale, 1));
+  /* soft-edged circle (mask, not clip-path, so the edge is feathered) */
+  -webkit-mask-image:radial-gradient(circle farthest-corner at 50% 50%, #000 calc(var(--reveal, 1) * 130% - 30%), transparent calc(var(--reveal, 1) * 130%));
+          mask-image:radial-gradient(circle farthest-corner at 50% 50%, #000 calc(var(--reveal, 1) * 130% - 30%), transparent calc(var(--reveal, 1) * 130%))}
 /* The rings canvas is deliberately oversized (up to 360vw) for its zoom-out;
    uncontained it made the whole document ~480px wider than the viewport on
    UW, so any stray horizontal scroll shifted the page sideways. The pin now
@@ -39,7 +46,8 @@
 
 /* Team: the card frames only the photo; name / role / CTA sit underneath,
    outside the card. */
-.v2 .team-card{display:block;padding:clamp(14px, 4px + 0.78vw, 20px)}
+.v2 .team-card{display:block;padding:0;background:none} /* no frame: just the photo */
+.v2 .team-card::before,.v2 .team-card::after{display:none}
 .v2 .team-photo{display:block}
 .v2 .mid-lead-card-slot .team-info{align-items:center;text-align:center;margin-top:clamp(18px, 6px + 0.94vw, 24px);pointer-events:auto}
 .v2 .team-profile-link{margin-top:clamp(14px, 6px + 0.63vw, 18px)}
@@ -66,7 +74,7 @@
 .v2 .grid .card .card-logo[src*="logo-cove"]{scale:.7}
 /* Stats (which Portfolio was pulled up into) is hidden here. */
 @media (min-width:1920px){
-  .v2 .portfolio{margin-top:200px}
+  .v2 .portfolio{margin-top:80px}
 }
 
 /* ---------- Co-Investors: 8 firms, 4 x 2 ---------- */
@@ -101,4 +109,32 @@
 .v2 .v2-weave-canvas{display:block;width:100%;height:100%}
 @media (prefers-reduced-motion: reduce){
   body.v2:not(.motion-on) .v2-weave-runway{height:0}
+}
+
+/* ---------- Compact pass: less dead scroll between sections ----------
+   Animations keep their original pace; only the idle holds are trimmed.
+   About: the 3 steps land at the same scroll distances as before (see the
+   thresholds in v2.js), but the ~1.4 screens of nothing after the last one
+   is cut to ~0.4 before Team comes in. */
+.v2 .about{height:260vh}   /* was 320vh */
+/* Co-Investors no longer needs the dead space that kept the footer wordmark
+   out of view — the contact block now sits between them. */
+.v2 .co-investors{padding-bottom:clamp(96px, -32px + 10vw, 160px)}
+/* Team -> Network: Network's content sits centered in its pin (room for the
+   logo curtain), so it only showed up ~840px after Team released. Pull the
+   section up under Team's tail so its text arrives right as Team lets go.
+   The overlapping box mustn't block the team cards' links meanwhile. */
+@media (min-width:901px){
+  /* Same idea for Hero -> Philosophy and Philosophy -> Team, tuned so all
+     three hand-offs leave the same ~300px between the outgoing and the
+     incoming content (measured at 1920x1080). */
+  .v2 .about{margin-top:-74vh}
+  .v2 .mid-lead{margin-top:-77vh}
+  .v2 .network{margin-top:-45vh;pointer-events:none}
+  .v2 .network-row{pointer-events:auto}
+}
+/* Retina band: Network's content sits at the top of its pin (not centered),
+   so it needs much less pull-up to land at the same hand-off distance. */
+@media (min-width:901px) and (max-width:1919.98px){
+  .v2 .network{margin-top:-23vh}
 }

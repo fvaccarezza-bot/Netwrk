@@ -9,7 +9,10 @@
   const reduce = typeof reduceMotion !== 'undefined' && reduceMotion;
   if (reduce) { steps.forEach(el => el.classList.add('is-on')); return; }
 
-  const THRESHOLDS = [0.05, 0.3, 0.55]; // pin progress at which each step comes in
+  // Pin progress at which each step comes in. Section is 260vh (v2.css), so
+  // these land at ~11vh / 66vh / 121vh of scroll, same as before, leaving a
+  // short hold after the last one instead of a long dead stretch.
+  const THRESHOLDS = [0.07, 0.41, 0.76];
   let ticking = false;
 
   const update = () => {
@@ -60,6 +63,10 @@
   update();
 })();
 
+// Which effect fills the section between Portfolio and Co-Investors:
+// 'web' = the 3D network growing from one node, 'logo' = the isotype in nodes.
+const WEAVE_MODE = 'web';
+
 // v2 only: weave between Portfolio and Co-Investors — a 3D network that
 // grows out of a single node at the center. Nodes live in real 3D space and
 // are perspective-projected: the web slowly turns (plus a scroll-driven turn
@@ -69,6 +76,7 @@
 // being cast outward from the center as it lands. Scrolling up un-builds it.
 // Dissolves before Co-Investors.
 (() => {
+  if (WEAVE_MODE !== 'web') return;
   const section = document.querySelector('.v2-weave');
   const canvas = section && section.querySelector('.v2-weave-canvas');
   if (!canvas) return;
@@ -96,14 +104,18 @@
     R = Math.min(w * 0.48, h * 0.62, 760); // radius of the node cloud
     const count = Math.round(Math.min(70, Math.max(30, (w * h) / 22000)));
     nodes = Array.from({ length: count }, (_, i) => {
-      if (i === 0) return { x: 0, y: 0, z: 0, ph: 0, sp: 0.3, big: true, time: Infinity };
+      // Node radius matches the hero's (script.js makeNodes): 1.6–3.4px, or
+      // 2.4–5.0px at >=1920. The seed takes the top of that range.
+      const isUW = window.innerWidth >= 1920;
+      const heroSize = (top) => (isUW ? 2.4 : 1.6) + (top ? 1 : Math.random()) * (isUW ? 2.6 : 1.8);
+      if (i === 0) return { x: 0, y: 0, z: 0, ph: 0, sp: 0.3, size: heroSize(true), time: Infinity };
       // Uniform-ish in a flattened ellipsoid (wider than tall, some depth).
       let x, y, z;
       do { x = Math.random() * 2 - 1; y = Math.random() * 2 - 1; z = Math.random() * 2 - 1; }
       while (x * x + y * y + z * z > 1 || x * x + y * y + z * z < 0.02);
       return { x: x * R * 1.35, y: y * R * 0.75, z: z * R * 0.9,
         ph: Math.random() * Math.PI * 2, sp: 0.2 + Math.random() * 0.3,
-        big: Math.random() < 0.12, time: Infinity };
+        size: heroSize(false), time: Infinity };
     });
 
     // Graph, hero-style: every pair closer than LINK_DIST is linked (line
@@ -182,6 +194,7 @@
     const rotY = reduce ? 0.5 : t * 0.06 + q * 1.6 + mouse.x * 0.5;
     const rotX = reduce ? 0.25 : 0.22 + mouse.y * 0.35;
     const camZ = reduce ? R * 1.6 : R * (2.1 - q * 0.9);
+    const s0 = FOCAL / (FOCAL + camZ - R); // depth scale at the cloud's middle plane
     const cyR = Math.cos(rotY), syR = Math.sin(rotY), cxR = Math.cos(rotX), sxR = Math.sin(rotX);
 
     const pts = nodes.map(n => {
@@ -241,7 +254,7 @@
       if (age <= 0) return;
       const a = clamp01(age);
       const flash = clamp01(1 - (grow - n.time) / 0.12);
-      const r = ((n.big ? 2.6 : 1.6) * (0.6 + 0.4 * a) + flash * 1.4) * P.s;
+      const r = (n.size * (0.6 + 0.4 * a) + flash * 1.4) * Math.min(Math.max(P.s / s0, 0.6), 1.25); // hero size on the middle plane, depth kept subtle
       ctx.shadowBlur = (6 + flash * 14) * P.fog;
       ctx.shadowColor = 'rgba(255,255,255,.85)';
       ctx.fillStyle = `rgba(255,255,255,${0.9 * a * P.fog})`;
@@ -263,4 +276,167 @@
   p = progress();
   const loop = (now) => { if (visible) draw(now); requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
+})();
+
+// v2 only: ALTERNATIVE to the weave above (WEAVE_MODE = 'logo') — the Netwrk
+// isotype drawn with nodes. Points are sampled from the SVG (denser along its
+// edges so the shape reads), start scattered through a 3D cloud, and converge
+// into the logo as you scroll, linked hero-style (every pair within reach,
+// fading with distance). It turns to face the camera as it forms, follows the
+// mouse a little, and blurs/fades out as Co-Investors rises over it.
+(() => {
+  if (WEAVE_MODE !== 'logo') return;
+  const section = document.querySelector('.v2-weave');
+  const canvas = section && section.querySelector('.v2-weave-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const reduce = typeof reduceMotion !== 'undefined' && reduceMotion;
+  const ss = (x) => x * x * (3 - 2 * x);
+  const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
+  const FOCAL = 900;
+  const runway = section.querySelector('.v2-weave-runway');
+  const coEl = section.querySelector('.co-investors');
+  let w = 0, h = 0, size = 0, nodes = [], linkDist = 60;
+  let mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+  let p = 0, pSmooth = 0, visible = false, ready = false;
+
+  // Same virtual timeline as the weave: 0 -> 0.24 section scrolls in,
+  // 0.24 -> 0.56 pinned runway (logo forms), 0.56 -> 0.76 Co-Investors rises.
+  const progress = () => {
+    const vh = window.innerHeight;
+    const top = section.getBoundingClientRect().top;
+    if (top > 0) return 0.24 * clamp01(1 - top / vh);
+    const b = clamp01(-top / Math.max(runway ? runway.offsetHeight : vh, 1));
+    const c = coEl ? clamp01(1 - coEl.getBoundingClientRect().top / vh) : 0;
+    return 0.24 + 0.32 * b + 0.2 * c;
+  };
+
+  // Sample target points from the isotype: rasterize it, then pick edge and
+  // interior pixels with a minimum spacing so the nodes spread evenly.
+  const img = new Image();
+  img.src = 'svg/iso-logo.svg';
+  const sample = () => {
+    const S = 240;
+    const off = document.createElement('canvas');
+    off.width = off.height = S;
+    const o = off.getContext('2d');
+    o.drawImage(img, 0, 0, S, S);
+    const data = o.getImageData(0, 0, S, S).data;
+    const inside = (x, y) => x >= 0 && y >= 0 && x < S && y < S && data[(y * S + x) * 4 + 3] > 128;
+    const edge = [], fill = [];
+    for (let y = 0; y < S; y += 2) for (let x = 0; x < S; x += 2) {
+      if (!inside(x, y)) continue;
+      const isEdge = !inside(x - 3, y) || !inside(x + 3, y) || !inside(x, y - 3) || !inside(x, y + 3);
+      (isEdge ? edge : fill).push([x / S - 0.5, y / S - 0.5]);
+    }
+    const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const picked = [];
+    const pick = (pool, minD, max) => {
+      for (const pt of shuffle(pool)) {
+        if (picked.length >= max) break;
+        if (picked.every(q => Math.hypot(q[0] - pt[0], q[1] - pt[1]) > minD)) picked.push(pt);
+      }
+    };
+    pick(edge, 0.045, 120);   // outline first, so the silhouette is crisp
+    pick(fill, 0.075, 175);   // then a lighter interior mesh
+    return picked;
+  };
+
+  const build = () => {
+    const r = canvas.getBoundingClientRect();
+    w = r.width; h = r.height;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    size = Math.min(w, h) * 0.56;     // logo diameter on screen
+    linkDist = size * 0.11;
+    if (!ready) return;
+    const R = Math.max(w, h) * 0.55;  // scatter cloud radius
+    nodes = sample().map(([x, y]) => {
+      let sx, sy, sz;
+      do { sx = Math.random() * 2 - 1; sy = Math.random() * 2 - 1; sz = Math.random() * 2 - 1; }
+      while (sx * sx + sy * sy + sz * sz > 1);
+      return {
+        tx: x * size, ty: y * size, tz: (Math.random() - 0.5) * 30, // logo target (slight depth)
+        sx: sx * R, sy: sy * R * 0.7, sz: sz * R,                   // scattered start
+        delay: Math.random() * 0.35,                                // staggered arrival
+        ph: Math.random() * Math.PI * 2, sp: 0.2 + Math.random() * 0.3,
+        big: Math.random() < 0.1
+      };
+    });
+  };
+
+  const draw = (now) => {
+    if (!nodes.length) return;
+    const t = now / 1000;
+    mouse.x += (mouse.tx - mouse.x) * 0.05;
+    mouse.y += (mouse.ty - mouse.y) * 0.05;
+    pSmooth += (p - pSmooth) * (reduce ? 1 : 0.12);
+    const q = reduce ? 0.6 : pSmooth;
+
+    const appear = reduce ? 1 : ss(clamp01((q - 0.06) / 0.18));   // scattered nodes fade in
+    const form = reduce ? 1 : clamp01((q - 0.22) / 0.32);         // 0 -> 1 converging into the logo
+    const out = reduce ? 0 : ss(clamp01((q - 0.56) / 0.18));      // Co-Investors rising
+    canvas.style.opacity = String(appear * (1 - out));
+    canvas.style.filter = out > 0.01 ? `blur(${out * 14}px)` : 'none';
+
+    // Turns to face the camera as it forms; the mouse keeps a little tilt.
+    const formEase = ss(form);
+    const rotY = (1 - formEase) * 1.3 + (reduce ? 0 : mouse.x * 0.35 + Math.sin(t * 0.3) * 0.04);
+    const rotX = (1 - formEase) * 0.4 + (reduce ? 0 : mouse.y * 0.25);
+    const cyR = Math.cos(rotY), syR = Math.sin(rotY), cxR = Math.cos(rotX), sxR = Math.sin(rotX);
+    const camZ = size * (1.2 - 0.25 * formEase);
+
+    const pts = nodes.map(n => {
+      const k = ss(clamp01((form - n.delay) / (1 - n.delay * 0.9)));
+      const wob = reduce ? 0 : (1 - k * 0.7) * 10;
+      const x = n.sx + (n.tx - n.sx) * k + Math.sin(t * n.sp + n.ph) * wob;
+      const y = n.sy + (n.ty - n.sy) * k + Math.cos(t * n.sp * 0.8 + n.ph) * wob;
+      const z = n.sz + (n.tz - n.sz) * k;
+      const x1 = x * cyR + z * syR, z1 = -x * syR + z * cyR;
+      const y1 = y * cxR - z1 * sxR, z2 = y * sxR + z1 * cxR;
+      const s = FOCAL / Math.max(FOCAL + z2 + camZ - size, 60);
+      return { x: w / 2 + x1 * s, y: h / 2 + y1 * s, s, k, fog: clamp01(0.3 + (s - 0.5) * 1.1) };
+    });
+
+    ctx.clearRect(0, 0, w, h);
+    // Links: hero-style, every pair within reach (reach grows a bit while
+    // scattered so the cloud still reads as a network).
+    const reach = linkDist * (1 + (1 - formEase) * 1.4);
+    ctx.lineWidth = 1;
+    for (let i = 0; i < pts.length; i++) {
+      const A = pts[i];
+      for (let j = i + 1; j < pts.length; j++) {
+        const B = pts[j];
+        const dx = A.x - B.x, dy = A.y - B.y;
+        if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+        const d = Math.hypot(dx, dy);
+        if (d >= reach) continue;
+        ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - d / reach) * (A.fog + B.fog) / 2})`;
+        ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+      }
+    }
+    pts.forEach((P, i) => {
+      const r = ((nodes[i].big ? 2.2 : 1.4) + P.k * 0.4) * P.s;
+      ctx.fillStyle = `rgba(255,255,255,${(0.55 + 0.4 * P.k) * P.fog})`;
+      ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, Math.PI * 2); ctx.fill();
+    });
+  };
+
+  const start = () => {
+    ready = true;
+    build();
+    window.addEventListener('resize', build);
+    if (reduce) { draw(0); window.addEventListener('resize', () => draw(0)); return; }
+    new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(section);
+    window.addEventListener('scroll', () => { p = progress(); }, { passive: true });
+    section.addEventListener('mousemove', e => {
+      mouse.tx = e.clientX / window.innerWidth - 0.5;
+      mouse.ty = e.clientY / window.innerHeight - 0.5;
+    });
+    p = progress();
+    const loop = (now) => { if (visible) draw(now); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  };
+  if (img.complete && img.naturalWidth) start(); else img.addEventListener('load', start);
 })();

@@ -1672,6 +1672,10 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   const TEXT_PHASE_END = 0.7;
   const OUTRO_HOLD_END = 0.82; // outro sits fully visible (pinned) until here
   const OUTRO_FADE_END = 0.95; // outro fully faded out by here
+  // index-v2: data-cards-from="center" makes the cards grow out of the rings' center
+  // instead of sliding in from the sides.
+  const CARDS_FROM_CENTER = section.dataset.cardsFrom === 'center';
+  const CENTER_EXTRA_GAP = 40; // px added per side to the cards' resting spread in that mode
   const CARDS_START = section.dataset.cardsStart ? parseFloat(section.dataset.cardsStart) : 0.7; // wide window — takes real, deliberate scroll distance to watch them settle
   const CARD_GAP = 28; // px gap between the two cards' inner edges at rest
   const CARD_ENTER_PUSH = 320; // extra px each card starts further out and slides in from
@@ -1741,6 +1745,22 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
       previewCards.forEach(card => {
         const dir = card.classList.contains('mid-lead-card-slot-left') ? -1 : 1;
         const restOffset = card.offsetWidth / 2 + CARD_GAP;
+        if (CARDS_FROM_CENTER) {
+          // Both start stacked on the rings' center and travel out to their
+          // side while growing with scroll. They stay hidden while stacked;
+          // once apart, each is uncovered by a circle mask opening from its
+          // own center (v2.css reads --reveal).
+          const travel = smoothstep(Math.min(cardGrow / 0.6, 1));
+          card.style.setProperty('--slide-x', `${dir * (restOffset + CENTER_EXTRA_GAP) * travel}px`);
+          card.style.setProperty('--slide-scale', (0.4 + 0.6 * cardGrow).toFixed(4));
+          const reveal = Math.min(Math.max((cardGrow - 0.3) / 0.7, 0), 1);
+          card.style.setProperty('--reveal', reveal.toFixed(4));
+          // Heavy blur + fade that only clears as the mask finishes opening.
+          const maskBlur = (1 - smoothstep(reveal)) * 26;
+          card.style.opacity = String(smoothstep(reveal));
+          card.style.filter = maskBlur > 0.5 ? `blur(${maskBlur}px)` : 'none';
+          return;
+        }
         const xOffset = dir * (restOffset + (1 - cardGrow) * CARD_ENTER_PUSH);
         const blur = (1 - cardGrow) * 18;
         card.style.opacity = String(cardGrow);
