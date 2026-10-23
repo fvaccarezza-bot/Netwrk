@@ -21,7 +21,7 @@
 }
 
 /* ---------- Mid-lead: statements hidden, team cards enter straight away ---------- */
-.v2 .mid-lead{height:420vh} /* rings first, team cards from 0.45 */
+.v2 .mid-lead{height:300vh} /* rings first, team cards 0.45 -> 0.8, then hold */
 .v2 .team-bio{display:none}
 /* Cards travel out of the rings' center and grow with scroll; each one is
    uncovered by a circle mask from its own center only once they're apart
@@ -58,23 +58,40 @@
   .v2 .grid .card{width:auto;flex:none;aspect-ratio:auto;
     height:clamp(150px, calc((100vh - 380px) / 3), 300px)}
 }
-/* Logos are trimmed to their visible content (images/portfolio-v2/), so one
-   box rule sizes them all evenly — the per-logo/per-tier scale patches in
-   styles.css (written for the padded originals) are neutralised here. */
-.v2 .grid .card .card-logo{max-width:62%;max-height:38%;transform:none;scale:none}
-/* Optical balance: compact/heavy marks pulled down, thin wide wordmarks
-   nudged up, so they all read at about Prometheus' visual weight. */
-.v2 .grid .card .card-logo[src*="logo-spacex"]{scale:1.12}
-.v2 .grid .card .card-logo[src*="logo-hypercard"]{scale:1.06}
-.v2 .grid .card .card-logo[src*="logo-deep"]{scale:.9}
-.v2 .grid .card .card-logo[src*="logo-coframe"]{scale:.9}
-.v2 .grid .card .card-logo[src*="logo-valinor"]{scale:.95}
-.v2 .grid .card .card-logo[src*="logo-mike"]{scale:.94}
-.v2 .grid .card .card-logo[src*="logo-arena"]{scale:.74}
-.v2 .grid .card .card-logo[src*="logo-cove"]{scale:.7}
+/* Logos come pre-framed (images/portfolio-v2/): every PNG is the same
+   ~1434x600 canvas with the mark already placed at its intended optical
+   size. So no per-logo sizing — each one is simply as tall as the card's
+   content box, and they all scale together, in proportion, per tier. A
+   slightly wider canvas just spills transparent margin (centered, clipped by
+   the card). The per-logo/per-tier scale patches in styles.css are
+   neutralised here. */
+.v2 .grid .card .card-logo{height:67.5%;width:auto;max-width:none;max-height:none;
+  transform:none;scale:none}
 /* Stats (which Portfolio was pulled up into) is hidden here. */
 @media (min-width:1920px){
   .v2 .portfolio{margin-top:80px}
+}
+
+/* Portfolio lock: pinned for a stretch of scroll so it can't be flicked past.
+   v2.js scrubs the card cascade in on entry and a soft fade/blur out at the
+   end of the hold. Desktop + motion only (mobile/reduced keep the static grid). */
+@media (min-width:901px){
+  body.v2.motion-on .portfolio{height:170vh}
+  body.v2.motion-on .portfolio-pin{position:sticky;top:0;height:100vh;height:100dvh}
+}
+
+/* Co-Investors lock: same treatment as Portfolio — pinned for a short stretch,
+   eyebrow -> 8 cards -> outro cascade in with scroll, short hold with a slow
+   push-in, soft exit (v2.js). Cards use the individual `translate` property
+   for the rise so their hover transform (scale/tilt) stays untouched. */
+@media (min-width:901px){
+  body.v2.motion-on .co-investors{height:170vh;padding-top:0;padding-bottom:0}
+  body.v2.motion-on .co-investors-pin{position:sticky;top:0;height:100vh;height:100dvh;
+    display:flex;flex-direction:column;justify-content:center}
+  body.v2.motion-on .co-investors-grid{opacity:1;filter:none;transform:none}
+  body.v2.motion-on .co-investor-card{opacity:0;filter:blur(10px);translate:0 28px;
+    transition:opacity .9s var(--ease),filter .9s var(--ease),translate 1.1s var(--ease),transform .4s var(--ease)}
+  body.v2.motion-on .co-investor-card.is-in{opacity:1;filter:blur(0);translate:0 0}
 }
 
 /* ---------- Co-Investors: 8 firms, 4 x 2 ---------- */
@@ -97,15 +114,15 @@
 /* ---------- Weave between Portfolio and Co-Investors (v2.js) ----------
    Scattered nodes that get wired together, left to right, as you scroll
    through the pin, then dissolve before Co-Investors. */
-/* Co-Investors lives inside this section, after a 200vh runway: the web
-   builds while pinned over the runway, then Co-Investors scrolls up over it
+/* Portfolio lives inside this section, after a 200vh runway: the web
+   builds while pinned over the runway, then Portfolio scrolls up over it
    and the pin holds behind it to the very end — so the canvas only releases
-   when Co-Investors' bottom meets the footer, which covers its edge. */
+   when Portfolio's bottom meets Co-Investors (the web has long faded by then). */
 .v2 .v2-weave{position:relative}
 .v2 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
   width:100vw;margin-left:calc(50% - 50vw)}
 .v2 .v2-weave-runway{height:200vh}
-.v2 .v2-weave .co-investors{position:relative;z-index:1}
+.v2 .v2-weave > section{position:relative;z-index:1}
 .v2 .v2-weave-canvas{display:block;width:100%;height:100%}
 @media (prefers-reduced-motion: reduce){
   body.v2:not(.motion-on) .v2-weave-runway{height:0}

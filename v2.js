@@ -164,7 +164,7 @@ const WEAVE_MODE = 'web';
   };
 
   const runway = section.querySelector('.v2-weave-runway');
-  const coEl = section.querySelector('.co-investors');
+  const coEl = section.querySelector(':scope > section'); // the section that rises over the canvas (Portfolio)
   const progress = () => {
     const vh = window.innerHeight;
     const top = section.getBoundingClientRect().top;
@@ -186,7 +186,7 @@ const WEAVE_MODE = 'web';
     const enter = reduce ? 1 : ss(clamp01((q - ENTER_START) / (GROW_START - ENTER_START)));
     // Blurs and fades out as Co-Investors rises over it.
     const out = reduce ? 0 : ss(clamp01((q - 0.56) / 0.18));
-    canvas.style.opacity = String(1 - out);
+    canvas.style.opacity = String(1 - out * 0.8); // settles at 20%, blurred, behind Portfolio
     canvas.style.filter = out > 0.01 ? `blur(${out * 14}px)` : 'none';
 
     // Camera: slow idle spin + scroll-driven turn, tilt follows the mouse,
@@ -296,7 +296,7 @@ const WEAVE_MODE = 'web';
   const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
   const FOCAL = 900;
   const runway = section.querySelector('.v2-weave-runway');
-  const coEl = section.querySelector('.co-investors');
+  const coEl = section.querySelector(':scope > section'); // the section that rises over the canvas (Portfolio)
   let w = 0, h = 0, size = 0, nodes = [], linkDist = 60;
   let mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let p = 0, pSmooth = 0, visible = false, ready = false;
@@ -377,7 +377,7 @@ const WEAVE_MODE = 'web';
     const appear = reduce ? 1 : ss(clamp01((q - 0.06) / 0.18));   // scattered nodes fade in
     const form = reduce ? 1 : clamp01((q - 0.22) / 0.32);         // 0 -> 1 converging into the logo
     const out = reduce ? 0 : ss(clamp01((q - 0.56) / 0.18));      // Co-Investors rising
-    canvas.style.opacity = String(appear * (1 - out));
+    canvas.style.opacity = String(appear * (1 - out * 0.8)); // settles at 20%, blurred
     canvas.style.filter = out > 0.01 ? `blur(${out * 14}px)` : 'none';
 
     // Turns to face the camera as it forms; the mouse keeps a little tilt.
@@ -439,4 +439,89 @@ const WEAVE_MODE = 'web';
     requestAnimationFrame(loop);
   };
   if (img.complete && img.naturalWidth) start(); else img.addEventListener('load', start);
+})();
+
+// v2 only (desktop): Portfolio lock — the section is pinned (v2.css) for a
+// stretch of scroll. Cards cascade in as it scrolls up into place (done by
+// the moment it locks), hold, then the whole block eases out with a soft
+// fade/blur/lift over the last part of the pin. Scrubbed, so it reverses.
+(() => {
+  const section = document.querySelector('.portfolio');
+  const pin = section && section.querySelector('.portfolio-pin');
+  const cards = section ? section.querySelectorAll('.card') : [];
+  if (!pin || !cards.length) return;
+  if ((typeof reduceMotion !== 'undefined' && reduceMotion) ||
+      !window.matchMedia('(min-width:901px)').matches) return;
+  const parts = pin.querySelectorAll(':scope > .section-title, :scope > .carousel');
+  // Cascade spread over the whole scroll-in and into the pin (~7vh of scroll
+  // per card), so something is always arriving: no idle stretch. Short hold
+  // (still slowly growing), then the soft exit.
+  const CARD_START = -0.9, CARD_STEP = 0.105; // pin progress (negative = still scrolling in)
+  const OUT_START = 0.7;
+  const GROW_FROM = 0.97, GROW_TO = 1.03; // subtle scale across entry + hold
+  const ss = (x) => x * x * (3 - 2 * x);
+  let ticking = false;
+  const update = () => {
+    const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
+    const p = -section.getBoundingClientRect().top / scrollable;
+    cards.forEach((c, i) => c.classList.toggle('is-visible', p >= CARD_START + i * CARD_STEP));
+    const out = ss(Math.min(Math.max((p - OUT_START) / (1 - OUT_START), 0), 1));
+    // Slow push-in: grows a touch from scroll-in through the whole hold.
+    const grow = Math.min(Math.max((p - CARD_START) / (OUT_START - CARD_START), 0), 1);
+    const scale = (GROW_FROM + (GROW_TO - GROW_FROM) * grow) * (1 - out * 0.03);
+    parts.forEach(el => {
+      el.style.opacity = String(1 - out * 0.75);
+      el.style.filter = out > 0.01 ? `blur(${out * 6}px)` : '';
+      el.style.transform = `translateY(${-out * 40}px) scale(${scale})`;
+    });
+    ticking = false;
+  };
+  const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+})();
+
+// v2 only (desktop): Co-Investors lock — same as Portfolio above. Pinned
+// (v2.css); eyebrow, the 8 cards and the outro cascade in one after another
+// as it scrolls into place (finishing shortly after it locks), short hold
+// with a slow push-in, then a soft fade/blur/lift out. Scrubbed, reverses.
+(() => {
+  const section = document.querySelector('.co-investors');
+  const pin = section && section.querySelector('.co-investors-pin');
+  if (!pin) return;
+  if ((typeof reduceMotion !== 'undefined' && reduceMotion) ||
+      !window.matchMedia('(min-width:901px)').matches) return;
+  const intro = pin.querySelector(':scope > .co-investors-intro:not(.co-investors-outro)');
+  const outro = pin.querySelector(':scope > .co-investors-outro');
+  const cards = pin.querySelectorAll('.co-investor-card');
+  // Cascade order: eyebrow, cards, outro (each toggles its own reveal class).
+  const items = [
+    ...(intro ? [[intro, 'is-visible']] : []),
+    ...Array.from(cards, c => [c, 'is-in']),
+    ...(outro ? [[outro, 'is-visible']] : []),
+  ];
+  const START = -0.9, STEP = 0.11; // pin progress (negative = still scrolling in)
+  const OUT_START = 0.7;
+  const GROW_FROM = 0.97, GROW_TO = 1.03;
+  const ss = (x) => x * x * (3 - 2 * x);
+  let ticking = false;
+  const update = () => {
+    const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
+    const p = -section.getBoundingClientRect().top / scrollable;
+    items.forEach(([el, cls], i) => el.classList.toggle(cls, p >= START + i * STEP));
+    const out = ss(Math.min(Math.max((p - OUT_START) / (1 - OUT_START), 0), 1));
+    const grow = Math.min(Math.max((p - START) / (OUT_START - START), 0), 1);
+    const scale = (GROW_FROM + (GROW_TO - GROW_FROM) * grow) * (1 - out * 0.03);
+    // On the pin itself (not its children): intro/outro own their opacity
+    // and transform for their reveal, inline styles there would override it.
+    pin.style.opacity = String(1 - out * 0.75);
+    pin.style.filter = out > 0.01 ? `blur(${out * 6}px)` : '';
+    pin.style.transform = `translateY(${-out * 40}px) scale(${scale})`;
+    ticking = false;
+  };
+  const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 })();

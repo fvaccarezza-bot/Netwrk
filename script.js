@@ -1677,6 +1677,9 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
   const CARDS_FROM_CENTER = section.dataset.cardsFrom === 'center';
   const CENTER_EXTRA_GAP = 40; // px added per side to the cards' resting spread in that mode
   const CARDS_START = section.dataset.cardsStart ? parseFloat(section.dataset.cardsStart) : 0.7; // wide window — takes real, deliberate scroll distance to watch them settle
+  // index-v2: data-cards-end lets the cards finish before the pin releases,
+  // so they hold, fully in, for the rest of it (default: right at release).
+  const CARDS_END = section.dataset.cardsEnd ? parseFloat(section.dataset.cardsEnd) : 1;
   const CARD_GAP = 28; // px gap between the two cards' inner edges at rest
   const CARD_ENTER_PUSH = 320; // extra px each card starts further out and slides in from
   let ticking = false;
@@ -1691,7 +1694,7 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
     const entryProgress = Math.min(textProgress / ENTRY_END, 1);
     const exitProgress = smoothstep(Math.max((textProgress - EXIT_START) / (1 - EXIT_START), 0));
     const outroFadeOut = smoothstep(Math.min(Math.max((progress - OUTRO_HOLD_END) / (OUTRO_FADE_END - OUTRO_HOLD_END), 0), 1));
-    const cardsProgress = smoothstep(Math.min(Math.max((progress - CARDS_START) / (1 - CARDS_START), 0), 1));
+    const cardsProgress = smoothstep(Math.min(Math.max((progress - CARDS_START) / (CARDS_END - CARDS_START), 0), 1));
     midLeadProgress = progress;
     midLeadExitProgress = exitProgress;
 
@@ -1753,7 +1756,10 @@ let midLeadExitProgress = 0; // shared with the pulse-ring background below
           const travel = smoothstep(Math.min(cardGrow / 0.6, 1));
           card.style.setProperty('--slide-x', `${dir * (restOffset + CENTER_EXTRA_GAP) * travel}px`);
           card.style.setProperty('--slide-scale', (0.4 + 0.6 * cardGrow).toFixed(4));
-          const reveal = Math.min(Math.max((cardGrow - 0.3) / 0.7, 0), 1);
+          // Opens early and fast (0.15 -> 0.75 of the grow) so the photos are
+          // already clearing while the rings are still zooming away — no
+          // stretch of blurry ghosts on an empty screen.
+          const reveal = Math.min(Math.max((cardGrow - 0.15) / 0.6, 0), 1);
           card.style.setProperty('--reveal', reveal.toFixed(4));
           // Heavy blur + fade that only clears as the mask finishes opening.
           const maskBlur = (1 - smoothstep(reveal)) * 26;
@@ -2158,7 +2164,10 @@ if (portfolioTitleEl) {
   }
 }
 
-if (grid && cards.length) {
+// v2 desktop pins Portfolio and scrubs this cascade off scroll (v2.js).
+const portfolioScrubbed = document.body.classList.contains('v2') && !reduceMotion &&
+  window.matchMedia('(min-width:901px)').matches;
+if (grid && cards.length && !portfolioScrubbed) {
   const revealCards = () => {
     cards.forEach((card, i) => {
       setTimeout(() => card.classList.add('is-visible'), reduceMotion ? 0 : i * CARD_STAGGER_MS);
@@ -2184,7 +2193,8 @@ if (grid && cards.length) {
 // Co-Investors grid: simple fade/blur/rise reveal, same pattern as the team grid.
 const coInvestorsGrid = document.querySelector('.co-investors-grid');
 
-if (coInvestorsGrid) {
+// v2 desktop pins Co-Investors and scrubs its cascade off scroll (v2.js).
+if (coInvestorsGrid && !portfolioScrubbed) {
   if (reduceMotion) {
     coInvestorsGrid.classList.add('is-visible');
     document.querySelectorAll('.co-investors-intro').forEach(el => el.classList.add('is-visible'));
