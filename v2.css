@@ -48,7 +48,11 @@
    outside the card. */
 .v2 .team-card{display:block;padding:0;background:none} /* no frame: just the photo */
 .v2 .team-card::before,.v2 .team-card::after{display:none}
-.v2 .team-photo{display:block}
+/* contain + bottom: wider cut-outs (Nick) keep their shoulders instead of
+   being cropped at the sides; the shoulders still sit on the frame's base. */
+.v2 .team-photo{display:block;object-fit:contain;object-position:center bottom}
+/* Nick's shot is darker than Ryan's — lifted to match once both are grayscale. */
+.v2 .team-photo[src*="team-nick"]{filter:grayscale(1) brightness(1.2) contrast(1.05)}
 .v2 .mid-lead-card-slot .team-info{align-items:center;text-align:center;margin-top:clamp(18px, 6px + 0.94vw, 24px);pointer-events:auto}
 .v2 .team-profile-link{margin-top:clamp(14px, 6px + 0.63vw, 18px)}
 

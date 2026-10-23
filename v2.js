@@ -525,3 +525,58 @@ const WEAVE_MODE = 'web';
   window.addEventListener('resize', onScroll);
   update();
 })();
+
+// v2 only (desktop): Team as STEPS instead of free scrubbing. Two resting
+// screens — A: rings + "The Team" centered, B: both faces fully in. A wheel
+// gesture near/inside the section glides the page (Lenis) to the next step,
+// so the whole scroll-driven animation in between always plays through and
+// you can never stop halfway. Wheel input is swallowed while gliding (plus a
+// short cooldown for trackpad inertia). Past B (the faces' hold) and above
+// the section, scrolling stays free. Reverse works the same way going up.
+(() => {
+  const section = document.querySelector('#team');
+  if (!section) return;
+  if ((typeof reduceMotion !== 'undefined' && reduceMotion) ||
+      !window.matchMedia('(min-width:901px)').matches) return;
+  const STEP_A = 0.2;  // pin progress: title in, rings centered
+  const STEP_B = 0.8;  // pin progress: cards fully in (data-cards-end)
+  const GLIDE = 1.4;   // s
+  const COOLDOWN = 450; // ms of swallowed wheel after a glide (trackpad inertia)
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  let busyUntil = 0;
+
+  const positions = () => {
+    const top = section.getBoundingClientRect().top + window.scrollY;
+    const scrollable = section.offsetHeight - window.innerHeight;
+    return { a: top + STEP_A * scrollable, b: top + STEP_B * scrollable, end: top + scrollable };
+  };
+
+  const glide = (to) => {
+    busyUntil = Infinity;
+    lenis.scrollTo(to, {
+      duration: GLIDE, easing: ease, lock: true, force: true,
+      onComplete: () => { busyUntil = performance.now() + COOLDOWN; },
+    });
+  };
+
+  window.addEventListener('wheel', (e) => {
+    if (typeof lenis === 'undefined' || !lenis) return;
+    if (Math.abs(e.deltaY) < 2) return;
+    if (e.target.closest && e.target.closest("[data-lenis-prevent]")) return; // open menu etc.
+    const swallow = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+    if (performance.now() < busyUntil) { swallow(); return; }
+    const y = window.scrollY, vh = window.innerHeight, { a, b, end } = positions();
+    const T = 2; // px tolerance
+    let target = null;
+    if (e.deltaY > 0) {
+      if (y >= a - 0.5 * vh && y < a - T) target = a;  // arriving: land on A
+      else if (y >= a - T && y < b - T) target = b;    // A (or between) -> faces
+    } else {
+      if (y > b + T && y <= end) target = b;           // from the hold back to faces
+      else if (y > a + T && y <= b + T) target = a;    // faces (or between) -> A
+    }
+    if (target === null) return; // free scroll
+    swallow();
+    glide(target);
+  }, { capture: true, passive: false });
+})();
