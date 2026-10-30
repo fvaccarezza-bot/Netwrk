@@ -1,100 +1,91 @@
 // index-v3.html — section behaviour on top of script-v3.js.
 //
-// Model: every pinned section (Philosophy, Team, Our Network, the nodes,
-// Portfolio, Co-Investors) uses its pin only on the FIRST pass, to play its
-// reveal; once that's done the pin is released (section collapses to a plain
-// block, scroll is compensated so nothing moves) and the page scrolls
-// normally both ways. Reveals are one-way. The only two-way animation is the
-// nodes web (grows going down, un-builds going up).
+// Model: only two pins. The nodes web (two-way: grows down, un-builds up) and
+// Our Network (first pass only, to open the logo curtain, then released).
+// Every other section flows normally and reveals once when it scrolls into
+// view, on timers.
 
 const V3_REDUCE = typeof reduceMotion !== 'undefined' && reduceMotion;
 const V3_DESKTOP = window.matchMedia('(min-width:901px)').matches;
-const ss = (x) => x * x * (3 - 2 * x);
 
-// Philosophy: the 3 lines come in one by one while the section is pinned
-// (the first already while it's still rising into place).
-(() => {
-  const section = document.querySelector('.about');
-  const steps = document.querySelectorAll('[data-about-steps] .about-step');
-  if (!section || !steps.length) return;
-  if (V3_REDUCE) { steps.forEach(el => el.classList.add('is-on')); return; }
-
-  const THRESHOLDS = [-0.15, 0.13, 0.4]; // pin progress (negative = before it pins)
-  let ticking = false;
-  const update = () => {
-    const scrollable = section.offsetHeight - window.innerHeight;
-    const progress = scrollable > 0 ? Math.min(-section.getBoundingClientRect().top / scrollable, 1) : 0;
-    steps.forEach((el, i) => { if (progress >= THRESHOLDS[i]) el.classList.add('is-on'); });
-    ticking = false;
-  };
-  const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
-})();
-
-// Short lock shared by Team, Portfolio and Co-Investors (desktop + motion):
-// the section is pinned for a 170vh stretch (v3.css). As it scrolls into
-// place its items cascade in once (timed, `stagger` ms apart), and the block
-// grows slightly (0.97 -> 1.03) through the hold; once released it stays at
-// full size. `targets` get the scale transform.
-const pinLock = (section, targets, items, stagger) => {
-  const START = -0.9, HOLD_END = 0.7, FROM = 0.97, TO = 1.03;
-  let played = false, ticking = false;
-  const update = () => {
-    const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
-    const p = -section.getBoundingClientRect().top / scrollable;
-    if (!played && p >= START) {
-      played = true;
-      items.forEach(([el, cls], i) => setTimeout(() => el.classList.add(cls), i * stagger));
-    }
-    const grow = Math.min(Math.max((p - START) / (HOLD_END - START), 0), 1);
-    const scale = section.classList.contains('is-released') ? TO : FROM + (TO - FROM) * grow;
-    targets.forEach(el => { el.style.transform = `scale(${scale})`; });
-    ticking = false;
-  };
-  const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
-};
-
-// Team: "The Team" + the two faces (revealed like the Portfolio cards).
-(() => {
-  const section = document.querySelector('#team');
-  const title = section && section.querySelector('.mid-lead-title');
-  const pin = section && section.querySelector('.mid-lead-pin');
-  if (!title || !pin) return;
-  const slots = section.querySelectorAll('.mid-lead-card-slot');
-  const items = [[title, 'is-on'], ...Array.from(slots, s => [s, 'is-in'])];
-  if (!V3_REDUCE && V3_DESKTOP) { pinLock(section, [pin], items, 120); return; }
-  // Mobile / reduced motion: no lock, reveal once when it scrolls into view.
+// Plays `items` ([element, class] pairs) `stagger` ms apart, once, when `el`
+// has scrolled a bit into view.
+const revealOnEnter = (el, items, stagger) => {
+  if (V3_REDUCE) { items.forEach(([item, cls]) => item.classList.add(cls)); return; }
   const io = new IntersectionObserver((en) => {
     if (!en[0].isIntersecting) return;
     io.disconnect();
-    items.forEach(([el, cls], i) => setTimeout(() => el.classList.add(cls), i * 120));
+    items.forEach(([item, cls], i) => setTimeout(() => item.classList.add(cls), i * stagger));
   }, { rootMargin: '0px 0px -20% 0px' });
-  io.observe(pin);
+  io.observe(el);
+};
+
+// Hero: same reveal as Philosophy, once the node web has finished growing.
+(() => {
+  const lines = Array.from(document.querySelectorAll('.hero .eyebrow, .hero .h1-bold, .hero .h1-light, .hero .hero-sub'), (el) => {
+    el.innerHTML = `<span class="about-line"><span>${el.innerHTML}</span></span>`;
+    return el.firstChild;
+  });
+  if (V3_REDUCE) { lines.forEach(l => l.classList.add('is-on')); return; }
+  window.addEventListener('hero-nodes-done', () => {
+    lines.forEach((l, i) => setTimeout(() => l.classList.add('is-on'), i * 130));
+  }, { once: true });
 })();
 
-// Portfolio: the 12 cards.
+// Philosophy: every line rises out of its own mask, one after another.
 (() => {
-  const section = document.querySelector('.portfolio');
-  const pin = section && section.querySelector('.portfolio-pin');
-  if (!pin || V3_REDUCE || !V3_DESKTOP) return; // mobile: script-v3.js's own reveal
-  const cards = section.querySelectorAll('.card');
-  pinLock(section, pin.querySelectorAll(':scope > .section-title, :scope > .carousel'),
-    Array.from(cards, c => [c, 'is-visible']), 90);
+  const copy = document.querySelector('[data-about-steps]');
+  if (!copy) return;
+  const lines = [];
+  copy.querySelectorAll('.about-step').forEach((step) => {
+    step.innerHTML = step.innerHTML.split(/<br\s*\/?>/i)
+      .map(html => `<span class="about-line"><span>${html.trim()}</span></span>`).join('');
+    lines.push(...step.querySelectorAll('.about-line'));
+  });
+  revealOnEnter(copy, lines.map(l => [l, 'is-on']), 130);
+})();
+
+// Team: same reveal as Philosophy. The title, then each face and its texts
+// rise out of their own masks, one after another.
+(() => {
+  const section = document.querySelector('#team');
+  const title = section && section.querySelector('.mid-lead-title');
+  if (!title) return;
+  const mask = (inner) => {
+    const line = document.createElement('span');
+    const span = document.createElement('span');
+    line.className = 'about-line';
+    inner.replaceWith(line);
+    span.append(inner);
+    line.append(span);
+    return line;
+  };
+  title.innerHTML = `<span class="about-line"><span>${title.innerHTML}</span></span>`;
+  const items = [title.firstChild];
+  section.querySelectorAll('.mid-lead-card-slot').forEach((slot) => {
+    const card = slot.querySelector('.team-card');
+    card.classList.add('about-line');
+    items.push(card);
+    slot.querySelectorAll('.team-name, .team-role, .team-profile-link').forEach(el => items.push(mask(el)));
+  });
+  revealOnEnter(section, items.map(l => [l, 'is-on']), 130);
+})();
+
+// Portfolio: the 12 cards (mobile: script-v3.js's own reveal).
+(() => {
+  const carousel = document.querySelector('.portfolio .carousel');
+  if (!carousel || !V3_DESKTOP) return;
+  revealOnEnter(carousel, Array.from(carousel.querySelectorAll('.card'), c => [c, 'is-visible']), 90);
 })();
 
 // Co-Investors: eyebrow, the 8 cards, then the outro.
 (() => {
   const section = document.querySelector('.co-investors');
   const pin = section && section.querySelector('.co-investors-pin');
-  if (!pin || V3_REDUCE || !V3_DESKTOP) return;
+  if (!pin || !V3_DESKTOP) return;
   const intro = pin.querySelector(':scope > .co-investors-intro:not(.co-investors-outro)');
   const outro = pin.querySelector(':scope > .co-investors-outro');
-  pinLock(section, [pin], [
+  revealOnEnter(pin, [
     ...(intro ? [[intro, 'is-visible']] : []),
     ...Array.from(pin.querySelectorAll('.co-investor-card'), c => [c, 'is-in']),
     ...(outro ? [[outro, 'is-visible']] : []),
@@ -115,7 +106,7 @@ const pinLock = (section, targets, items, stagger) => {
   const canvas = section && section.querySelector('.v2-weave-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const reduce = typeof reduceMotion !== 'undefined' && reduceMotion;
   const ss = (x) => x * x * (3 - 2 * x);
   const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
@@ -200,11 +191,16 @@ const pinLock = (section, targets, items, stagger) => {
 
   const runway = section.querySelector('.v2-weave-runway');
   const coEl = section.querySelector(':scope > section'); // the section that rises over the canvas (Portfolio)
+  // Retina: the weave overlaps Network by more than its text clears on short
+  // screens, so the web waits until that text is near the top of the screen.
+  const copyEl = document.querySelector('.network-copy-after');
+  const retina = window.matchMedia('(min-width:901px) and (max-width:1919.98px)');
   const progress = () => {
     const vh = window.innerHeight;
     const top = section.getBoundingClientRect().top;
-    if (top > 0) return 0.24 * clamp01(1 - top / vh);
-    const b = clamp01(-top / ((runway && runway.offsetHeight) || vh)); // after the runway is dropped: grow over one screen
+    const wait = retina.matches && copyEl ? Math.max(copyEl.getBoundingClientRect().bottom - vh * 0.2 - top, 0) : 0;
+    if (top + wait > 0) return 0.24 * clamp01(1 - (top + wait) / vh);
+    const b = clamp01(-(top + wait) / (((runway && runway.offsetHeight) || vh) - wait)); // after the runway is dropped: grow over one screen
     const c = coEl ? clamp01(1 - coEl.getBoundingClientRect().top / vh) : 0;
     return 0.24 + 0.32 * b + 0.2 * c;
   };
@@ -290,7 +286,7 @@ const pinLock = (section, targets, items, stagger) => {
       const a = clamp01(age);
       const flash = clamp01(1 - (grow - n.time) / 0.12);
       const r = (n.size * (0.6 + 0.4 * a) + flash * 1.4) * Math.min(Math.max(P.s / s0, 0.6), 1.25); // hero size on the middle plane, depth kept subtle
-      ctx.shadowBlur = (6 + flash * 14) * P.fog;
+      ctx.shadowBlur = flash > 0.05 ? (6 + flash * 14) * P.fog : 0;
       ctx.shadowColor = 'rgba(255,255,255,.85)';
       ctx.fillStyle = `rgba(255,255,255,${0.9 * a * P.fog})`;
       ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, Math.PI * 2); ctx.fill();
@@ -309,83 +305,40 @@ const pinLock = (section, targets, items, stagger) => {
     mouse.ty = e.clientY / window.innerHeight - 0.5;
   });
   p = progress();
-  const loop = (now) => { if (visible) draw(now); requestAnimationFrame(loop); };
+  let frame = 0;
+  const loop = (now) => {
+    const dimmed = parseFloat(canvas.style.opacity || '1') < 0.25;
+    if (visible && (!dimmed || frame++ % 2 === 0)) draw(now);
+    requestAnimationFrame(loop);
+  };
   requestAnimationFrame(loop);
 })();
 
-// ---------------------------------------------------------------------------
-// One-time pins. Each pinned section lets go of its pin as soon as it has
-// reached the top and its reveal is done (or it was scrolled past entirely).
-// The section collapses to a plain block (.is-released, v3.css) and the scroll
-// position is corrected in the same frame so its content stays exactly where
-// it is on screen — works mid-scroll too (Lenis is re-based, see below).
-// ---------------------------------------------------------------------------
-
-// Jump to absolute `y` after a layout change, shifting Lenis's whole state
-// (current, target, running glide) by the same amount so it doesn't pull back.
-const shiftScrollTo = (y, y0) => {
-  const s = y - y0;
-  window.scrollTo(0, y);
-  if (typeof lenis === 'undefined' || !lenis || !s) return;
-  if (typeof lenis.animatedScroll === 'number') lenis.animatedScroll += s;
-  if (typeof lenis.targetScroll === 'number') lenis.targetScroll += s;
-  const a = lenis.animate;
-  if (a) ['value', 'from', 'to'].forEach(k => { if (typeof a[k] === 'number') a[k] += s; });
-};
-
-// Run `check` on scroll until it returns true.
-const untilDone = (check) => {
+// Our Network's pin is one-way: as soon as the curtain is fully open (or the
+// section was scrolled past) it collapses to a plain block, and the scroll is
+// corrected in the same frame so its content stays where it is on screen.
+(() => {
+  const section = document.querySelector('.network');
+  const marquee = document.querySelector('.network-marquee');
+  if (!section || !marquee) return;
   const onScroll = () => requestAnimationFrame(() => {
-    if (check()) window.removeEventListener('scroll', onScroll);
+    if (section.classList.contains('is-released')) return;
+    const r = section.getBoundingClientRect();
+    if (!(r.bottom <= 0 || (r.top <= 0 && marquee.style.opacity === '1'))) return;
+    const y0 = window.scrollY; // read before the collapse (scroll anchoring may move it)
+    section.classList.add('is-released');
+    window.removeEventListener('scroll', onScroll);
+    // The 100vh block starts where the sticky screen was.
+    const vh = window.innerHeight;
+    const y = y0 + r.top - (r.bottom < vh ? r.bottom - vh : 0);
+    const shift = y - y0;
+    window.scrollTo(0, y);
+    // Re-base Lenis (current, target, running glide) so it doesn't pull back.
+    if (typeof lenis === 'undefined' || !lenis) return;
+    lenis.animatedScroll += shift;
+    lenis.targetScroll += shift;
+    const a = lenis.animate;
+    if (a) ['value', 'from', 'to'].forEach(k => { if (typeof a[k] === 'number') a[k] += shift; });
   });
   window.addEventListener('scroll', onScroll, { passive: true });
-};
-
-const pinProgress = (el) => -el.getBoundingClientRect().top / Math.max(el.offsetHeight - window.innerHeight, 1);
-const allOn = (sel, cls) => !document.querySelector(`${sel}:not(.${cls})`);
-
-[
-  // Philosophy: all 3 lines in, plus a hold (until 70% of its pin).
-  ['.about', () => pinProgress(document.querySelector('.about')) >= 0.7 && allOn('.about-step', 'is-on')],
-  // Our Network: logo curtain fully open.
-  ['.network', () => { const m = document.querySelector('.network-marquee'); return !!m && m.style.opacity === '1'; }],
-  // Short locks: their cascade is in.
-  ['#team', () => allOn('#team .mid-lead-title', 'is-on') && allOn('#team .mid-lead-card-slot', 'is-in')],
-  ['.portfolio', () => allOn('.portfolio .card', 'is-visible')],
-  ['.co-investors', () => allOn('.co-investor-card', 'is-in')],
-].forEach(([sel, done]) => {
-  const section = document.querySelector(sel);
-  if (!section) return;
-  untilDone(() => {
-    const r = section.getBoundingClientRect();
-    if (!(r.bottom <= 0 || (r.top <= 0 && done()))) return false;
-    const y0 = window.scrollY; // read before the collapse (scroll anchoring may move it)
-    const before = section.offsetHeight;
-    section.classList.add('is-released');
-    if (before - section.offsetHeight <= 0) return true;
-    // The released 100vh block starts where the sticky screen was: top 0
-    // while held, or above the viewport by (vh - bottom) once ending/past.
-    const vh = window.innerHeight;
-    shiftScrollTo(y0 + r.top - (r.bottom < vh ? r.bottom - vh : 0), y0);
-    return true;
-  });
-});
-
-// The nodes' runway shrinks to one screen after the first pass (v3.css), so
-// going back up the web still un-builds on its own screen, just quicker.
-// Done once Portfolio covers the top of the screen (so Network, which moves
-// closer, can't pop into view); Portfolio is kept in place on screen.
-(() => {
-  const weave = document.querySelector('.v2-weave');
-  const ref = document.querySelector('.portfolio');
-  if (!weave || !ref) return;
-  untilDone(() => {
-    if (ref.getBoundingClientRect().top > -40) return false;
-    const y0 = window.scrollY;
-    const docBefore = ref.getBoundingClientRect().top + y0;
-    weave.classList.add('is-released');
-    const shift = ref.getBoundingClientRect().top + window.scrollY - docBefore;
-    if (shift) shiftScrollTo(y0 + shift, y0);
-    return true;
-  });
 })();

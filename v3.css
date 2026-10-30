@@ -1,9 +1,9 @@
 /* ==========================================================================
    index-v3.html — overrides on top of styles.css (body.v3).
    Removed content is hidden with .v2-hidden, not deleted from the markup.
-   Pins (sticky runways) are used only on the first pass; v3.js adds
-   .is-released to a section once its reveal is done, and these rules then
-   turn it into a plain block.
+   Only two pins: the nodes web (two-way) and Our Network (first pass only,
+   v3.js then adds .is-released). The rest flows and reveals once on entering
+   the viewport (v3.js).
    ========================================================================== */
 
 .v3 .v2-hidden{display:none !important}
@@ -14,18 +14,22 @@
   .v3 .hero-nodes{max-width:96vw}
 }
 
-/* ---------- Philosophy: 3 lines (v3.js adds .is-on) ---------- */
-/* Starts a bit under the hero's tail so it doesn't trail a full screen behind. */
-.v3 .about{margin-top:-40vh}
+/* ---------- Philosophy: each line rises out of its own mask (v3.js) ---------- */
+.v3 .about{height:auto}
+.v3 .about-pin{position:relative;height:auto;overflow:visible;
+  padding:clamp(140px, 20px + 9.4vw, 200px) 0}
 .v3 .about-copy .about-eyebrow{color:#fff;margin:0 0 30px}
-.v3 .about-step{opacity:0;filter:blur(14px);transform:translateY(18px);
-  transition:opacity .9s var(--ease),filter .9s var(--ease),transform .9s var(--ease)}
-.v3 .about-step.is-on{opacity:1;filter:blur(0);transform:translateY(0)}
-.v3 .about.is-released{height:auto}
-.v3 .about.is-released .about-pin{position:relative}
+.v3 .about-line{display:block;overflow:hidden;padding-bottom:.2em;margin-bottom:-.2em}
+.v3 .about-line > *{display:block;opacity:0;transform:translateY(110%);
+  transition:transform 1.1s var(--ease),opacity .7s var(--ease)}
+.v3 .about-line.is-on > *{opacity:1;transform:none}
 @media (prefers-reduced-motion: reduce){
-  body.v3:not(.motion-on) .about-step{opacity:1;filter:none;transform:none;transition:none}
+  body.v3:not(.motion-on) .about-line > *{opacity:1;transform:none;transition:none}
 }
+
+/* ---------- Hero copy: masked lines (.about-line) instead of the base blur ---------- */
+.v3 .hero .eyebrow,.v3 .hero .h1-bold,.v3 .hero .h1-light,.v3 .hero .hero-sub{
+  opacity:1;filter:none;transform:none;transition:none}
 
 /* ---------- Team: "The Team" + two faces (no rings) ---------- */
 .v3 .mid-lead{height:auto;margin-top:0}
@@ -34,22 +38,16 @@
   display:flex;flex-direction:column;align-items:center;
   padding:clamp(120px, 20px + 7.8vw, 170px) 0}
 .v3 .mid-lead-title{position:static;margin:0;font-weight:400; /* h2 default is bold */
-  opacity:0;filter:blur(14px);translate:0 24px;pointer-events:none;
-  transition:opacity 1s var(--ease),filter 1s var(--ease),translate 1s var(--ease)}
-.v3 .mid-lead-title.is-on{opacity:1;filter:blur(0);translate:0 0}
+  pointer-events:none}
 .v3 .mid-lead-cards{position:static;transform:none;width:auto;height:auto;pointer-events:auto;
   display:flex;justify-content:center;align-items:flex-start;gap:clamp(96px, 30px + 6vw, 200px);
   margin-top:clamp(40px, 10px + 2.3vw, 56px)}
-/* Each face reveals like a Portfolio card (same values/timing). */
-.v3 .mid-lead-card-slot{position:relative;top:auto;left:auto;transform:none;pointer-events:auto;
-  opacity:0;filter:blur(18px);translate:0 32px;scale:.93;
-  transition:opacity 1.1s var(--ease),filter 1.1s var(--ease),translate .7s var(--ease),scale .7s var(--ease)}
-.v3 .mid-lead-card-slot.is-in{opacity:1;filter:blur(0);translate:0 0;scale:1}
+.v3 .mid-lead-card-slot{position:relative;top:auto;left:auto;transform:none;pointer-events:auto}
 .v3 .team-bio{display:none}
 /* No card frame: just the cut-out photo, fading out at the bottom. */
-.v3 .team-card{display:block;padding:0;background:none}
+.v3 .team-card{display:block;padding:0;margin-bottom:0;background:none}
 .v3 .team-card::before,.v3 .team-card::after{display:none}
-.v3 .team-photo{display:block;object-fit:contain;object-position:center bottom;
+.v3 .team-photo{display:block;margin-inline:auto;object-fit:contain;object-position:center bottom;
   -webkit-mask-image:linear-gradient(to bottom,#000 58%,transparent 100%);
           mask-image:linear-gradient(to bottom,#000 58%,transparent 100%)}
 .v3 .team-photo[src*="team-nick"]{filter:grayscale(1) brightness(1.2) contrast(1.05)} /* match Ryan's exposure */
@@ -64,8 +62,13 @@
 .v3 .team-role{position:relative;z-index:2;margin-top:12px}
 .v3 .team-profile-link{position:static;margin-top:clamp(14px, 6px + 0.63vw, 18px)}
 .v3 .team-profile-link::after{content:'';position:absolute;inset:0;z-index:2}
+/* Text masks: room for the name's descenders, and flex so the items' own
+   margins keep working inside the wrapper. */
+.v3 .team-info .about-line{padding-bottom:calc(.2 * var(--tn));margin-bottom:calc(-.2 * var(--tn))}
+.v3 .team-info .about-line > span{display:flex;flex-direction:column;align-items:center}
 @media (min-width:901px) and (max-width:1919.98px){
   .v3 .team-info{--tn:clamp(32px, -16px + 3.75vw, 56px)}
+  .v3 .mid-lead-pin{padding-bottom:clamp(180px, 100px + 6.25vw, 220px)}
 }
 @media (min-width:1920px){
   .v3 .team-info{--tn:48px}
@@ -73,28 +76,22 @@
 @media (max-width:600px){
   .v3 .mid-lead-cards{flex-direction:column;align-items:center}
 }
-@media (prefers-reduced-motion: reduce){
-  body.v3:not(.motion-on) .mid-lead-title,
-  body.v3:not(.motion-on) .mid-lead-card-slot{opacity:1;filter:none;translate:none;scale:none;transition:none}
-}
 
-/* ---------- Our Network ---------- */
-.v3 .network{margin-top:0}
+/* ---------- Our Network: pinned on the first pass only ---------- */
 .v3 .network.is-released{height:auto}
 .v3 .network.is-released .network-pin{position:relative}
 
-/* ---------- Nodes web (wraps Portfolio + Co-Investors) ---------- */
-/* Pinned canvas behind everything in the section; a 200vh runway for the web
-   to grow (100vh after the first pass, so it can still un-build going up). */
+/* ---------- Nodes web (wraps Portfolio + Co-Investors): the only pin ---------- */
+/* Canvas pinned behind the whole section; the 200vh runway is where the web
+   grows (going down) and un-builds (going up), alone on screen. */
 .v3 .v2-weave{position:relative}
 .v3 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
   width:100vw;margin-left:calc(50% - 50vw)}
 .v3 .v2-weave-canvas{display:block;width:100%;height:100%}
 .v3 .v2-weave-runway{height:200vh}
-.v3 .v2-weave.is-released .v2-weave-runway{height:100vh;height:100dvh}
 .v3 .v2-weave > section{position:relative;z-index:1}
-/* Starts under Our Network's tail, so the seed node rises in soon after its
-   copy; the overlapping box mustn't block Network's logos. */
+/* Starts under Our Network's tail so the seed node comes up sooner. The box
+   is transparent there; it mustn't block Network's logos. */
 @media (min-width:901px){
   .v3 .v2-weave{margin-top:-51vh;pointer-events:none}
   .v3 .v2-weave > section{pointer-events:auto}
@@ -107,6 +104,8 @@
 }
 
 /* ---------- Portfolio: 4 x 3, all 12 in one viewport (desktop) ---------- */
+.v3 .portfolio{height:auto}
+.v3 .portfolio-pin{position:relative;height:auto}
 @media (min-width:901px){
   .v3 .grid-track{grid-template-columns:repeat(4,1fr)}
   .v3 .grid .card{width:auto;flex:none;aspect-ratio:auto;
@@ -133,32 +132,13 @@
 .v3 .card-logo[src*="logo-lux"]{scale:.7}
 .v3 .card-logo[src*="logo-a16z"]{scale:.46}
 
-/* ---------- Short locks: Team, Portfolio, Co-Investors (desktop + motion) ----------
-   Pinned for 170vh (70vh held) on the first pass; v3.js cascades the items
-   in and grows the block slightly, then releases it. */
+/* Co-Investors cards reveal one by one (v3.js adds .is-in). */
 @media (min-width:901px){
-  body.v3.motion-on .mid-lead,
-  body.v3.motion-on .portfolio{height:170vh}
-  body.v3.motion-on .co-investors{height:170vh;padding-top:0;padding-bottom:0}
-  body.v3.motion-on .mid-lead-pin{position:sticky;top:0;height:100vh;height:100dvh;
-    justify-content:center;padding:0}
-  body.v3.motion-on .portfolio-pin{position:sticky;top:0;height:100vh;height:100dvh}
-  body.v3.motion-on .co-investors-pin{position:sticky;top:0;height:100vh;height:100dvh;
-    display:flex;flex-direction:column;justify-content:center}
   body.v3.motion-on .co-investors-grid{opacity:1;filter:none;transform:none}
   body.v3.motion-on .co-investor-card{opacity:0;filter:blur(10px);translate:0 28px;
     transition:opacity .9s var(--ease),filter .9s var(--ease),translate 1.1s var(--ease),transform .4s var(--ease)}
   body.v3.motion-on .co-investor-card.is-in{opacity:1;filter:blur(0);translate:0 0}
 }
-@media (min-width:901px) and (max-width:1919.98px){
-  body.v3.motion-on .mid-lead{margin-top:-25vh} /* Philosophy -> Team, retina only */
-}
-body.v3.motion-on .mid-lead.is-released,
-body.v3.motion-on .portfolio.is-released,
-body.v3.motion-on .co-investors.is-released{height:auto}
-body.v3.motion-on .mid-lead.is-released .mid-lead-pin,
-body.v3.motion-on .portfolio.is-released .portfolio-pin,
-body.v3.motion-on .co-investors.is-released .co-investors-pin{position:relative}
 
 /* ---------- Footer: contact block (the Contact menu link lands here) ---------- */
 .v3 .footer-contact{background:var(--bg);text-align:center;

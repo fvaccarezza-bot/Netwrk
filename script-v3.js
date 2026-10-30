@@ -593,13 +593,19 @@ const ALL_NETWORK_LOGOS = [
   marqueeEl.addEventListener('mouseleave', () => { hovering = false; });
 
   let last = performance.now();
+  // Paused off screen; each track's loop height is measured once (and on
+  // resize), reading it every frame forced a layout per column.
+  let onScreen = false;
+  new IntersectionObserver((en) => { onScreen = en[0].isIntersecting; }).observe(marqueeEl);
+  window.addEventListener('resize', () => tracks.forEach(t => { t.half = 0; }));
 
   const loop = (now) => {
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
+    if (!onScreen) { requestAnimationFrame(loop); return; }
 
     tracks.forEach(t => {
-      const half = t.el.scrollHeight / 2 || 1;
+      const half = t.half || (t.half = t.el.scrollHeight / 2 || 1);
       const target = t.base * (hovering ? HOVER_MULTIPLIER : IDLE_MULTIPLIER);
       t.speed += (target - t.speed) * 0.03;
 
@@ -688,10 +694,7 @@ const ALL_NETWORK_LOGOS = [
     const marqueeBlur = (1 - eased) * 14;
     marqueeEl.style.filter = marqueeBlur > 0.5 ? `blur(${marqueeBlur}px)` : 'none';
     if (copyEl) {
-      // Reveals entirely BEFORE the pin engages — driven by the section's
-      // normal scroll-into-view position, not the pinned progress — so by
-      // the time the pin actually sticks, the text is already settled and
-      // the pinned scroll is free to belong to the logo curtain/growth.
+      // Driven by the section's scroll-into-view position (one-way).
       const preRect = networkSection.getBoundingClientRect();
       const preProgress = Math.min(Math.max(1 - preRect.top / window.innerHeight, 0), 1);
       copyMax = Math.max(copyMax, preProgress); // one-way
@@ -702,10 +705,7 @@ const ALL_NETWORK_LOGOS = [
       // Starts lower and rises into place as it reveals.
       copyEl.style.transform = `translateY(${(1 - copyIn) * COPY_DROP}px)`;
 
-      // Headline/subcopy (UW: sits below the marquee) reveals in lockstep
-      // with the eyebrow above — both settle before the pin engages, so the
-      // icon curtain/grow animation between them is the only thing driven
-      // by the pinned scroll.
+      // Headline/subcopy (UW: sits below the marquee) reveals in lockstep.
       if (copyAfterEl) {
         copyAfterEl.style.opacity = String(copyIn);
         copyAfterEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
@@ -764,9 +764,10 @@ const ALL_NETWORK_LOGOS = [
   const PULSE_LEAD_MS = 250; // fires this much before the entrance reveal fully finishes
   let maxNodeDist = 1; // set once in makeNodes, reused every frame for the ripple's timing
 
-  let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const loadStart = performance.now();
   let revealStart = null; // set the first frame the page loader is gone
+  let grownFired = false;
   let seedNode = null;
   let nodes = [];
   let raf = null;
@@ -1039,7 +1040,9 @@ const ALL_NETWORK_LOGOS = [
         : smoothstep(Math.min(Math.max(t, 0), 1));
       n.cast = n === seedNode ? 1 : easeOutCubic(Math.min(Math.max((elapsed - n.waveDelay) / CAST_MS, 0), 1));
     });
-    growElapsed = (revealStart !== null && elapsed > WAVE_SPAN * 1.2 + CAST_MS) ? null : elapsed;
+    const grown = revealStart !== null && elapsed > WAVE_SPAN * 1.2 + CAST_MS;
+    growElapsed = grown ? null : elapsed;
+    if (grown && !grownFired) { grownFired = true; window.dispatchEvent(new Event('hero-nodes-done')); } // v3.js: hero copy
     // Entrance blur: held while the loader is up (the seed reads as a soft
     // glow), then the whole field sharpens as the web grows in.
     const revealBlur = revealStart === null ? REVEAL_BLUR
