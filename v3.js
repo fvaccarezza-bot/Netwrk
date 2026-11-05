@@ -1,22 +1,21 @@
 // index-v3.html — section behaviour on top of script-v3.js.
 //
-// Model: only two pins. The nodes web (two-way: grows down, un-builds up) and
-// Our Network (first pass only, to open the logo curtain, then released).
-// Every other section flows normally and reveals once when it scrolls into
-// view, on timers.
+// Model: no pins. Every section flows normally and reveals once when it
+// scrolls into view, on timers. The nodes web is a fixed backdrop behind
+// Portfolio / Co-Investors that builds (and un-builds) with the scroll.
 
 const V3_REDUCE = typeof reduceMotion !== 'undefined' && reduceMotion;
 const V3_DESKTOP = window.matchMedia('(min-width:901px)').matches;
 
 // Plays `items` ([element, class] pairs) `stagger` ms apart, once, when `el`
-// has scrolled a bit into view.
-const revealOnEnter = (el, items, stagger) => {
+// has scrolled a bit into view (`margin`: IntersectionObserver rootMargin).
+const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   if (V3_REDUCE) { items.forEach(([item, cls]) => item.classList.add(cls)); return; }
   const io = new IntersectionObserver((en) => {
     if (!en[0].isIntersecting) return;
     io.disconnect();
     items.forEach(([item, cls], i) => setTimeout(() => item.classList.add(cls), i * stagger));
-  }, { rootMargin: '0px 0px -20% 0px' });
+  }, { rootMargin: margin });
   io.observe(el);
 };
 
@@ -75,7 +74,7 @@ const revealOnEnter = (el, items, stagger) => {
 (() => {
   const carousel = document.querySelector('.portfolio .carousel');
   if (!carousel || !V3_DESKTOP) return;
-  revealOnEnter(carousel, Array.from(carousel.querySelectorAll('.card'), c => [c, 'is-visible']), 90);
+  revealOnEnter(carousel, Array.from(carousel.querySelectorAll('.card'), c => [c, 'is-visible']), 45, '0px 0px 15% 0px'); // starts just before it's on screen
 })();
 
 // Co-Investors: eyebrow, the 8 cards, then the outro.
@@ -89,7 +88,7 @@ const revealOnEnter = (el, items, stagger) => {
     ...(intro ? [[intro, 'is-visible']] : []),
     ...Array.from(pin.querySelectorAll('.co-investor-card'), c => [c, 'is-in']),
     ...(outro ? [[outro, 'is-visible']] : []),
-  ], 110);
+  ], 60, '0px 0px 15% 0px');
 })();
 
 // The nodes web (section between Our Network and Portfolio, behind Portfolio /
@@ -112,8 +111,8 @@ const revealOnEnter = (el, items, stagger) => {
   const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
   const ENTER_START = 0.08;                // seed node starts rising in from below
   // Virtual timeline q (see progress()): 0 -> 0.24 while the section scrolls
-  // in (seed rises from 0.08), 0.24 -> 0.56 across the pinned runway (the web
-  // builds), 0.56 -> 0.76 while Co-Investors rises over it (web dims).
+  // in (seed rises from 0.08), 0.24 -> 0.56 over the next screen, behind
+  // Portfolio (the web builds), 0.56 -> 0.76 while Co-Investors comes in (web dims).
   const GROW_START = 0.24, GROW_END = 0.56; // section progress over which it spreads
   const FOCAL = 900;                        // perspective focal length (px)
   let w = 0, h = 0, R = 0, linkDist = 1, nodes = [], edges = [];
@@ -189,18 +188,12 @@ const revealOnEnter = (el, items, stagger) => {
     });
   };
 
-  const runway = section.querySelector('.v2-weave-runway');
-  const coEl = section.querySelector(':scope > section'); // the section that rises over the canvas (Portfolio)
-  // Retina: the weave overlaps Network by more than its text clears on short
-  // screens, so the web waits until that text is near the top of the screen.
-  const copyEl = document.querySelector('.network-copy-after');
-  const retina = window.matchMedia('(min-width:901px) and (max-width:1919.98px)');
+  const coEl = document.querySelector('.co-investors'); // the web dims as it comes in
   const progress = () => {
     const vh = window.innerHeight;
     const top = section.getBoundingClientRect().top;
-    const wait = retina.matches && copyEl ? Math.max(copyEl.getBoundingClientRect().bottom - vh * 0.2 - top, 0) : 0;
-    if (top + wait > 0) return 0.24 * clamp01(1 - (top + wait) / vh);
-    const b = clamp01(-(top + wait) / (((runway && runway.offsetHeight) || vh) - wait)); // after the runway is dropped: grow over one screen
+    if (top > 0) return 0.24 * clamp01(1 - top / vh);
+    const b = clamp01(-top / vh); // grows over one screen
     const c = coEl ? clamp01(1 - coEl.getBoundingClientRect().top / vh) : 0;
     return 0.24 + 0.32 * b + 0.2 * c;
   };
@@ -314,31 +307,11 @@ const revealOnEnter = (el, items, stagger) => {
   requestAnimationFrame(loop);
 })();
 
-// Our Network's pin is one-way: as soon as the curtain is fully open (or the
-// section was scrolled past) it collapses to a plain block, and the scroll is
-// corrected in the same frame so its content stays where it is on screen.
-(() => {
-  const section = document.querySelector('.network');
-  const marquee = document.querySelector('.network-marquee');
-  if (!section || !marquee) return;
-  const onScroll = () => requestAnimationFrame(() => {
-    if (section.classList.contains('is-released')) return;
-    const r = section.getBoundingClientRect();
-    if (!(r.bottom <= 0 || (r.top <= 0 && marquee.style.opacity === '1'))) return;
-    const y0 = window.scrollY; // read before the collapse (scroll anchoring may move it)
-    section.classList.add('is-released');
-    window.removeEventListener('scroll', onScroll);
-    // The 100vh block starts where the sticky screen was.
-    const vh = window.innerHeight;
-    const y = y0 + r.top - (r.bottom < vh ? r.bottom - vh : 0);
-    const shift = y - y0;
-    window.scrollTo(0, y);
-    // Re-base Lenis (current, target, running glide) so it doesn't pull back.
-    if (typeof lenis === 'undefined' || !lenis) return;
-    lenis.animatedScroll += shift;
-    lenis.targetScroll += shift;
-    const a = lenis.animate;
-    if (a) ['value', 'from', 'to'].forEach(k => { if (typeof a[k] === 'number') a[k] += shift; });
+// Preload: once the page has loaded, decode every image up front so the
+// first pass down doesn't pay for it when a section reveals.
+window.addEventListener('load', () => {
+  document.querySelectorAll('img').forEach((img) => {
+    img.loading = 'eager';
+    if (img.decode) img.decode().catch(() => {});
   });
-  window.addEventListener('scroll', onScroll, { passive: true });
-})();
+});

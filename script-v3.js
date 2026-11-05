@@ -666,18 +666,18 @@ const ALL_NETWORK_LOGOS = [
   }
 
   let ticking = false;
-  // One-way: once the curtain has opened it stays open (v3 reveals once).
-  let netMax = 0, copyMax = 0;
+  // v3: no pin. The curtain plays once on a timer as the section comes in,
+  // and its final height is reserved (margin) so nothing below moves.
+  const NET_OPEN_MS = 1400;
+  let netStart = null, copyMax = 0;
+  const tick = () => { update(); if (performance.now() - netStart < NET_OPEN_MS) requestAnimationFrame(tick); };
 
   const update = () => {
-    const scrollable = networkSection.offsetHeight - window.innerHeight;
-    const progress = scrollable > 0
-      ? Math.min(Math.max(-networkSection.getBoundingClientRect().top / scrollable, 0), 1)
-      : 0;
-    // Growth finishes at 85% of the pin's scroll (eased so it visibly
-    // decelerates into that finish).
-    netMax = Math.max(netMax, Math.min(progress / 0.85, 1));
-    const growth = netMax;
+    if (netStart === null && networkSection.getBoundingClientRect().top < window.innerHeight * 0.75) {
+      netStart = performance.now();
+      requestAnimationFrame(tick);
+    }
+    const growth = netStart === null ? 0 : Math.min((performance.now() - netStart) / NET_OPEN_MS, 1);
     const eased = 1 - Math.pow(1 - growth, 3);
     // Phase 1: a horizontal curtain opens (clip-path, not scale — the logos
     // stay full size, never squashed) over the first row's fixed height.
@@ -687,6 +687,7 @@ const ALL_NETWORK_LOGOS = [
     const growProgress = Math.max((eased - CURTAIN_END) / (1 - CURTAIN_END), 0);
     const currentHeight = CURTAIN_HEIGHT + (HEIGHT_END - CURTAIN_HEIGHT) * growProgress;
     marqueeEl.style.height = `${currentHeight}px`;
+    marqueeEl.style.marginBottom = `${HEIGHT_END - currentHeight}px`;
     const curtainInset = 50 * (1 - curtainProgress);
     marqueeEl.style.clipPath = `inset(${curtainInset}% 0 ${curtainInset}% 0)`;
     marqueeEl.style.transform = marqueeIsFullBleed ? 'translateX(-50%)' : 'none';

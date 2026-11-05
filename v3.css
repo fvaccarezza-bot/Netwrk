@@ -1,9 +1,8 @@
 /* ==========================================================================
    index-v3.html — overrides on top of styles.css (body.v3).
    Removed content is hidden with .v2-hidden, not deleted from the markup.
-   Only two pins: the nodes web (two-way) and Our Network (first pass only,
-   v3.js then adds .is-released). The rest flows and reveals once on entering
-   the viewport (v3.js).
+   No pins: every section flows and reveals once on entering the viewport
+   (v3.js). The nodes web is a sticky backdrop behind Portfolio / Co-Investors.
    ========================================================================== */
 
 .v3 .v2-hidden{display:none !important}
@@ -77,33 +76,25 @@
   .v3 .mid-lead-cards{flex-direction:column;align-items:center}
 }
 
-/* ---------- Our Network: pinned on the first pass only ---------- */
-.v3 .network.is-released{height:auto}
-.v3 .network.is-released .network-pin{position:relative}
+/* ---------- Our Network: no pin (the curtain opens on a timer) ---------- */
+.v3 .network{height:auto}
+.v3 .network-pin{position:relative;height:auto;overflow:visible;padding:clamp(120px, 20px + 7.8vw, 170px) 0}
+@media (max-width:900px){
+  .v3 .network-pin{overflow-x:hidden} /* the marquee is wider than the screen */
+}
 
-/* ---------- Nodes web (wraps Portfolio + Co-Investors): the only pin ---------- */
-/* Canvas pinned behind the whole section; the 200vh runway is where the web
-   grows (going down) and un-builds (going up), alone on screen. */
+/* ---------- Nodes web (wraps Portfolio + Co-Investors): backdrop, no pin ---------- */
+/* The canvas sticks behind both sections; its negative margin takes it out
+   of the flow, so Portfolio starts right away and scrolls over it. */
 .v3 .v2-weave{position:relative}
 .v3 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
-  width:100vw;margin-left:calc(50% - 50vw)}
+  width:100vw;margin-left:calc(50% - 50vw);margin-bottom:-100vh;margin-bottom:-100dvh}
 .v3 .v2-weave-canvas{display:block;width:100%;height:100%}
-.v3 .v2-weave-runway{height:200vh}
+.v3 .v2-weave-runway{display:none}
 .v3 .v2-weave > section{position:relative;z-index:1}
-/* Starts under Our Network's tail so the seed node comes up sooner. The box
-   is transparent there; it mustn't block Network's logos. */
-@media (min-width:901px){
-  .v3 .v2-weave{margin-top:-51vh;pointer-events:none}
-  .v3 .v2-weave > section{pointer-events:auto}
-}
-@media (min-width:901px) and (max-width:1919.98px){
-  .v3 .v2-weave{margin-top:-60vh}
-}
-@media (prefers-reduced-motion: reduce){
-  body.v3:not(.motion-on) .v2-weave-runway{height:0}
-}
 
 /* ---------- Portfolio: 4 x 3, all 12 in one viewport (desktop) ---------- */
+.v3 .grid .card{transition:opacity .7s var(--ease),filter .7s var(--ease),transform .5s var(--ease)}
 .v3 .portfolio{height:auto}
 .v3 .portfolio-pin{position:relative;height:auto}
 @media (min-width:901px){
@@ -136,7 +127,7 @@
 @media (min-width:901px){
   body.v3.motion-on .co-investors-grid{opacity:1;filter:none;transform:none}
   body.v3.motion-on .co-investor-card{opacity:0;filter:blur(10px);translate:0 28px;
-    transition:opacity .9s var(--ease),filter .9s var(--ease),translate 1.1s var(--ease),transform .4s var(--ease)}
+    transition:opacity .6s var(--ease),filter .6s var(--ease),translate .7s var(--ease),transform .4s var(--ease)}
   body.v3.motion-on .co-investor-card.is-in{opacity:1;filter:blur(0);translate:0 0}
 }
 
