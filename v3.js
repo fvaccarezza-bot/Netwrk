@@ -54,12 +54,34 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   update();
 })();
 
-// Team (v2's entrance, quick): both faces slide in together from opposite
-// sides on the first scroll into view. "The Team" is simply there.
+// Team (v2's slide-in, no pin): the two faces slide in from opposite sides
+// with the scroll — from 320px out, blurred and transparent, to rest by the
+// time the cards reach the middle of the screen. Scrubbed, so it reverses.
 (() => {
-  const section = document.querySelector('#team');
-  if (!section) return;
-  revealOnEnter(section, Array.from(section.querySelectorAll('.mid-lead-card-slot'), s => [s, 'is-on']), 0, '0px 0px -25% 0px');
+  const cards = document.querySelector('#team .mid-lead-cards');
+  if (!cards) return;
+  const slots = Array.from(cards.querySelectorAll('.mid-lead-card-slot'));
+  const PUSH = 320;
+  if (V3_REDUCE) { slots.forEach(s => { s.style.opacity = '1'; }); return; }
+  const ss = (x) => x * x * (3 - 2 * x);
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const vh = window.innerHeight, r = cards.getBoundingClientRect();
+    const end = vh / 2 - r.height / 2; // cards centered on screen
+    const p = ss(Math.min(Math.max((vh - r.top) / Math.max(vh - end, 1), 0), 1));
+    slots.forEach((s) => {
+      const dir = s.classList.contains('mid-lead-card-slot-left') ? -1 : 1;
+      const blur = (1 - p) * 18;
+      s.style.opacity = String(p);
+      s.style.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
+      s.style.transform = p < 1 ? `translateX(${dir * (1 - p) * PUSH}px)` : 'none';
+    });
+  };
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 })();
 
 // Portfolio: the 12 cards (mobile: script-v3.js's own reveal).

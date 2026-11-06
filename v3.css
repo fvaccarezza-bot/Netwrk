@@ -54,12 +54,8 @@
   display:flex;justify-content:center;align-items:flex-start;gap:clamp(96px, 30px + 6vw, 200px);
   margin-top:clamp(40px, 10px + 2.3vw, 56px)}
 .v3 .mid-lead-card-slot{position:relative;top:auto;left:auto;transform:none;pointer-events:auto}
-/* Entrance (v3.js adds .is-on once, on the first scroll into view). */
-body.v3.motion-on .mid-lead-card-slot{opacity:0;
-  transition:opacity .6s var(--ease),transform .8s var(--ease)}
-body.v3.motion-on .mid-lead-card-slot-left{transform:translateX(-16vw)}
-body.v3.motion-on .mid-lead-card-slot-right{transform:translateX(16vw)}
-body.v3.motion-on .mid-lead-card-slot.is-on{opacity:1;transform:none}
+/* Entrance: v3.js scrubs opacity / blur / translate with the scroll (v2's slide-in). */
+body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,transform}
 .v3 .team-bio{display:none}
 /* Corner brackets around the photo (the base .team-card frame, no fill). */
 .v3 .team-card{display:block;padding:clamp(14px, 4px + 0.78vw, 20px);margin-bottom:0;background:none}
