@@ -39,9 +39,26 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   if (!steps.length) return;
   if (V3_REDUCE) { steps.forEach(s => s.classList.add('is-on')); return; }
   const AT = [0, 0.3, 0.6]; // pin progress per step; the last third is the hold
-  let ticking = false;
+  let ticking = false, done = false;
+  // Pinned on the first pass only: once the section has fully scrolled out
+  // above, its runway is removed and the scroll moves up by the same amount
+  // (native + Lenis' own positions), so nothing on screen jumps.
+  const unpin = () => {
+    done = true;
+    steps.forEach(s => s.classList.add('is-on'));
+    const run = section.offsetHeight - window.innerHeight;
+    const y = window.scrollY;
+    section.style.height = 'auto';
+    window.scrollTo(0, y - run);
+    if (typeof lenis !== 'undefined' && lenis) {
+      lenis.animatedScroll -= run;
+      lenis.targetScroll -= run;
+    }
+  };
   const update = () => {
     ticking = false;
+    if (done) return;
+    if (section.getBoundingClientRect().bottom <= 0) { unpin(); return; }
     const run = section.offsetHeight - window.innerHeight;
     const top = section.getBoundingClientRect().top;
     if (top > window.innerHeight * 0.25) return; // not in place yet
