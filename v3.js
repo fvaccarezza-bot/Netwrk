@@ -31,12 +31,27 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   }, { once: true });
 })();
 
-// Philosophy (v2's reveal): "Philosophy", the lead line, then the paragraph
-// blur in one after another.
+// Philosophy (v2's reveal, pinned): "Philosophy", the lead line, then the
+// paragraph blur in at points of the pin's scroll. One-way: they stay on.
 (() => {
-  const copy = document.querySelector('[data-about-steps]');
-  if (!copy) return;
-  revealOnEnter(copy, Array.from(copy.querySelectorAll('.about-step'), s => [s, 'is-on']), 260);
+  const section = document.querySelector('.about');
+  const steps = section ? Array.from(section.querySelectorAll('.about-step')) : [];
+  if (!steps.length) return;
+  if (V3_REDUCE) { steps.forEach(s => s.classList.add('is-on')); return; }
+  const AT = [0, 0.3, 0.6]; // pin progress per step; the last third is the hold
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const run = section.offsetHeight - window.innerHeight;
+    const top = section.getBoundingClientRect().top;
+    if (top > window.innerHeight * 0.25) return; // not in place yet
+    const p = run > 0 ? Math.min(Math.max(-top / run, 0), 1) : 1;
+    steps.forEach((s, i) => { if (p >= AT[i]) s.classList.add('is-on'); });
+  };
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 })();
 
 // Team (v2's entrance, quick): both faces slide in together from opposite

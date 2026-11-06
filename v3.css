@@ -13,12 +13,13 @@
   .v3 .hero-nodes{max-width:96vw}
 }
 
-/* ---------- Philosophy: a full screen of its own (Team stays below the fold
-   until you scroll); the 3 steps blur in one after another, as in v2 (v3.js) ---------- */
-.v3 .about{height:auto}
-.v3 .about-pin{position:relative;height:auto;overflow:visible;
-  min-height:100vh;min-height:100svh;display:flex;align-items:center;
-  padding:clamp(140px, 20px + 9.4vw, 200px) 0}
+/* ---------- Philosophy: short pin (one screen of runway, base sticky
+   .about-pin); the 3 steps blur in with the scroll, as in v2 (v3.js) ---------- */
+.v3 .about{height:200vh;height:200svh}
+@media (prefers-reduced-motion: reduce){
+  body.v3:not(.motion-on) .about{height:auto}
+  body.v3:not(.motion-on) .about-pin{position:relative}
+}
 .v3 .about-copy .about-eyebrow{color:#fff;margin:0 0 30px}
 .v3 .about-step{opacity:0;filter:blur(14px);transform:translateY(18px);
   transition:opacity .7s var(--ease),filter .7s var(--ease),transform .7s var(--ease)}
