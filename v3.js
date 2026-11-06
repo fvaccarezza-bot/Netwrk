@@ -31,43 +31,20 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   }, { once: true });
 })();
 
-// Philosophy: every line rises out of its own mask, one after another.
+// Philosophy (v2's reveal): "Philosophy", the lead line, then the paragraph
+// blur in one after another.
 (() => {
   const copy = document.querySelector('[data-about-steps]');
   if (!copy) return;
-  const lines = [];
-  copy.querySelectorAll('.about-step').forEach((step) => {
-    step.innerHTML = step.innerHTML.split(/<br\s*\/?>/i)
-      .map(html => `<span class="about-line"><span>${html.trim()}</span></span>`).join('');
-    lines.push(...step.querySelectorAll('.about-line'));
-  });
-  revealOnEnter(copy, lines.map(l => [l, 'is-on']), 130);
+  revealOnEnter(copy, Array.from(copy.querySelectorAll('.about-step'), s => [s, 'is-on']), 260);
 })();
 
-// Team: same reveal as Philosophy. The title, then each face and its texts
-// rise out of their own masks, one after another.
+// Team (v2's entrance, quick): both faces slide in together from opposite
+// sides on the first scroll into view. "The Team" is simply there.
 (() => {
   const section = document.querySelector('#team');
-  const title = section && section.querySelector('.mid-lead-title');
-  if (!title) return;
-  const mask = (inner) => {
-    const line = document.createElement('span');
-    const span = document.createElement('span');
-    line.className = 'about-line';
-    inner.replaceWith(line);
-    span.append(inner);
-    line.append(span);
-    return line;
-  };
-  title.innerHTML = `<span class="about-line"><span>${title.innerHTML}</span></span>`;
-  const items = [title.firstChild];
-  section.querySelectorAll('.mid-lead-card-slot').forEach((slot) => {
-    const card = slot.querySelector('.team-card');
-    card.classList.add('about-line');
-    items.push(card);
-    slot.querySelectorAll('.team-name, .team-role, .team-profile-link').forEach(el => items.push(mask(el)));
-  });
-  revealOnEnter(section, items.map(l => [l, 'is-on']), 130);
+  if (!section) return;
+  revealOnEnter(section, Array.from(section.querySelectorAll('.mid-lead-card-slot'), s => [s, 'is-on']), 0, '0px 0px -25% 0px');
 })();
 
 // Portfolio: the 12 cards (mobile: script-v3.js's own reveal).

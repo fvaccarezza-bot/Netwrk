@@ -13,11 +13,19 @@
   .v3 .hero-nodes{max-width:96vw}
 }
 
-/* ---------- Philosophy: each line rises out of its own mask (v3.js) ---------- */
+/* ---------- Philosophy: a full screen of its own (Team stays below the fold
+   until you scroll); the 3 steps blur in one after another, as in v2 (v3.js) ---------- */
 .v3 .about{height:auto}
 .v3 .about-pin{position:relative;height:auto;overflow:visible;
+  min-height:100vh;min-height:100svh;display:flex;align-items:center;
   padding:clamp(140px, 20px + 9.4vw, 200px) 0}
 .v3 .about-copy .about-eyebrow{color:#fff;margin:0 0 30px}
+.v3 .about-step{opacity:0;filter:blur(14px);transform:translateY(18px);
+  transition:opacity .7s var(--ease),filter .7s var(--ease),transform .7s var(--ease)}
+.v3 .about-step.is-on{opacity:1;filter:blur(0);transform:translateY(0)}
+@media (prefers-reduced-motion: reduce){
+  body.v3:not(.motion-on) .about-step{opacity:1;filter:none;transform:none;transition:none}
+}
 .v3 .about-line{display:block;overflow:hidden;padding-bottom:.2em;margin-bottom:-.2em}
 .v3 .about-line > *{display:block;opacity:0;transform:translateY(110%);
   transition:transform 1.1s var(--ease),opacity .7s var(--ease)}
@@ -30,44 +38,46 @@
 .v3 .hero .eyebrow,.v3 .hero .h1-bold,.v3 .hero .h1-light,.v3 .hero .hero-sub{
   opacity:1;filter:none;transform:none;transition:none}
 
-/* ---------- Team: "The Team" + two faces (no rings) ---------- */
+/* ---------- Team: "The Team" + two framed faces sliding in from opposite
+   sides (v2's entrance, without the rings / statements) ---------- */
 .v3 .mid-lead{height:auto;margin-top:0}
 .v3 .mid-lead-pulse{display:none}
+/* One screen: title and both cards share the frame. */
 .v3 .mid-lead-pin{position:relative;height:auto;overflow:visible;
-  display:flex;flex-direction:column;align-items:center;
-  padding:clamp(120px, 20px + 7.8vw, 170px) 0}
+  min-height:100vh;min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:clamp(80px, 20px + 4.7vw, 110px) 0}
 .v3 .mid-lead-title{position:static;margin:0;font-weight:400; /* h2 default is bold */
   pointer-events:none}
 .v3 .mid-lead-cards{position:static;transform:none;width:auto;height:auto;pointer-events:auto;
   display:flex;justify-content:center;align-items:flex-start;gap:clamp(96px, 30px + 6vw, 200px);
   margin-top:clamp(40px, 10px + 2.3vw, 56px)}
 .v3 .mid-lead-card-slot{position:relative;top:auto;left:auto;transform:none;pointer-events:auto}
+/* Entrance (v3.js adds .is-on once, on the first scroll into view). */
+body.v3.motion-on .mid-lead-card-slot{opacity:0;
+  transition:opacity .6s var(--ease),transform .8s var(--ease)}
+body.v3.motion-on .mid-lead-card-slot-left{transform:translateX(-16vw)}
+body.v3.motion-on .mid-lead-card-slot-right{transform:translateX(16vw)}
+body.v3.motion-on .mid-lead-card-slot.is-on{opacity:1;transform:none}
 .v3 .team-bio{display:none}
-/* No card frame: just the cut-out photo, fading out at the bottom. */
-.v3 .team-card{display:block;padding:0;margin-bottom:0;background:none}
-.v3 .team-card::before,.v3 .team-card::after{display:none}
-.v3 .team-photo{display:block;margin-inline:auto;object-fit:contain;object-position:center bottom;
-  -webkit-mask-image:linear-gradient(to bottom,#000 58%,transparent 100%);
-          mask-image:linear-gradient(to bottom,#000 58%,transparent 100%)}
+/* Corner brackets around the photo (the base .team-card frame, no fill). */
+.v3 .team-card{display:block;padding:clamp(14px, 4px + 0.78vw, 20px);margin-bottom:0;background:none}
+.v3 .team-card::before{display:none}
+.v3 .team-photo{display:block;margin-inline:auto;object-fit:contain;object-position:center bottom}
 .v3 .team-photo[src*="team-nick"]{filter:grayscale(1) brightness(1.2) contrast(1.05)} /* match Ryan's exposure */
-/* Name rides over the faded bottom of the photo. Size = the site's bold
-   lead scale ("These are not logos."): base, retina band, 48px from 1920.
+/* Name under the frame. Size = the site's bold lead scale ("These are not
+   logos."): base, retina band, 48px from 1920.
    .team-info is static so the link's hit area (::after) spans the whole
    slot, photo included — hovering anywhere plays "View Profile". */
 .v3 .team-info{position:static;align-items:center;text-align:center;pointer-events:auto;
-  --tn:clamp(38px, 2px + 2.81vw, 56px);margin-top:calc(-0.7 * var(--tn))}
+  --tn:clamp(38px, 2px + 2.81vw, 56px);margin-top:clamp(18px, 6px + 0.94vw, 24px)}
 .v3 .team-name{position:relative;z-index:2;font-family:var(--sans);font-weight:800;
   font-size:var(--tn);line-height:.95;letter-spacing:-.02em;white-space:nowrap}
 .v3 .team-role{position:relative;z-index:2;margin-top:12px}
 .v3 .team-profile-link{position:static;margin-top:clamp(14px, 6px + 0.63vw, 18px)}
 .v3 .team-profile-link::after{content:'';position:absolute;inset:0;z-index:2}
-/* Text masks: room for the name's descenders, and flex so the items' own
-   margins keep working inside the wrapper. */
-.v3 .team-info .about-line{padding-bottom:calc(.2 * var(--tn));margin-bottom:calc(-.2 * var(--tn))}
-.v3 .team-info .about-line > span{display:flex;flex-direction:column;align-items:center}
 @media (min-width:901px) and (max-width:1919.98px){
   .v3 .team-info{--tn:clamp(32px, -16px + 3.75vw, 56px)}
-  .v3 .mid-lead-pin{padding-bottom:clamp(180px, 100px + 6.25vw, 220px)}
 }
 @media (min-width:1920px){
   .v3 .team-info{--tn:48px}
