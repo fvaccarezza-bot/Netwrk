@@ -73,7 +73,7 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
 
 // Team (v2's slide-in, no pin): the two faces slide in from opposite sides
 // with the scroll — from 320px out, blurred and transparent, to rest by the
-// time the cards reach the middle of the screen. Scrubbed, so it reverses.
+// time the cards reach the middle of the screen. Scrubbed, one-way, once.
 (() => {
   const cards = document.querySelector('#team .mid-lead-cards');
   if (!cards) return;
@@ -81,12 +81,14 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   const PUSH = 320;
   if (V3_REDUCE) { slots.forEach(s => { s.style.opacity = '1'; }); return; }
   const ss = (x) => x * x * (3 - 2 * x);
-  let ticking = false;
+  let ticking = false, pMax = 0; // one-way: scrolling up never undoes it
   const update = () => {
     ticking = false;
+    if (pMax >= 1) return; // played once, done
     const vh = window.innerHeight, r = cards.getBoundingClientRect();
     const end = vh / 2 - r.height / 2; // cards centered on screen
-    const p = ss(Math.min(Math.max((vh - r.top) / Math.max(vh - end, 1), 0), 1));
+    pMax = Math.max(pMax, Math.min(Math.max((vh - r.top) / Math.max(vh - end, 1), 0), 1));
+    const p = ss(pMax);
     slots.forEach((s) => {
       const dir = s.classList.contains('mid-lead-card-slot-left') ? -1 : 1;
       const blur = (1 - p) * 18;
