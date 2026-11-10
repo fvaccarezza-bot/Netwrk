@@ -19,6 +19,13 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
   io.observe(el);
 };
 
+// Mobile: the body copy has desktop-placed <br>s that read as random breaks
+// on a phone — swap them for spaces (headlines keep theirs).
+if (!V3_DESKTOP) {
+  document.querySelectorAll('.network-subcopy-inline br, .network-subcopy br, .co-investors-intro-copy br')
+    .forEach(br => br.replaceWith(' '));
+}
+
 // Hero: same reveal as Philosophy, once the node web has finished growing.
 (() => {
   const lines = Array.from(document.querySelectorAll('.hero .eyebrow, .hero .h1-bold, .hero .h1-light, .hero .hero-sub'), (el) => {
@@ -61,7 +68,8 @@ const revealOnEnter = (el, items, stagger, margin = '0px 0px -10% 0px') => {
     if (section.getBoundingClientRect().bottom <= 0) { unpin(); return; }
     const run = section.offsetHeight - window.innerHeight;
     const top = section.getBoundingClientRect().top;
-    if (top > window.innerHeight * 0.25) return; // not in place yet
+    // Mobile starts the steps while the section is still rising (no blank screen after the hero).
+    if (top > window.innerHeight * (V3_DESKTOP ? 0.25 : 0.6)) return; // not in place yet
     const p = run > 0 ? Math.min(Math.max(-top / run, 0), 1) : 1;
     steps.forEach((s, i) => { if (p >= AT[i]) s.classList.add('is-on'); });
   };

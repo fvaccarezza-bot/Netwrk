@@ -144,3 +144,39 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
 .v3 .footer-contact .eyebrow{margin:0 0 clamp(20px, 4px + 1.25vw, 28px)}
 /* The mail reuses the "View Profile" link (type, roll-up hover, arrow). */
 .v3 .footer-contact .footer-contact-mail{margin-top:0;font-size:clamp(14px, 6px + 0.63vw, 16px)}
+
+/* ==========================================================================
+   Mobile (≤900px) — nothing here reaches retina / Normal / UW.
+   ========================================================================== */
+@media (max-width:900px){
+  /* Header: transparent bar over scrolling content made the logo/menu
+     collide with headings. A soft fade from the page colour sits behind it. */
+  .v3 .header::before{content:'';position:absolute;inset:0 0 -28px;z-index:-1;pointer-events:none;
+    background:linear-gradient(to bottom,var(--bg) 40%,rgba(5,5,5,0))}
+
+  /* Our Network: 3 tiles that fit the screen (was 4 x 135px, cut off on
+     the right); script-v3.js sizes the reveal to 4 rows of these. */
+  .v3 .network-pin{padding:88px 0 32px}
+  .v3 .network-after{padding-top:32px}
+  .v3 .network-logo,.v3 .marquee-col{width:calc((100vw - 48px - 24px) / 3)}
+  .v3 .network-logo{height:calc((100vw - 48px - 24px) / 3);padding:12px}
+
+  /* Portfolio: all 12 in a static 2-column grid (was a one-card carousel). */
+  .v3 .carousel{--gw:100%}
+  .v3 .carousel::before,.v3 .carousel::after,.v3 .carousel-ind{display:none}
+  .v3 .grid{overflow:visible}
+  .v3 .grid-track{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;padding:0;transform:none}
+  .v3 .grid .card{flex:none;width:auto}
+  .v3 .card .num{top:9px;left:10px}
+  .v3 .card .cat{bottom:9px;right:10px;font-size:9px;letter-spacing:1.5px}
+
+  /* Co-Investors: matching 12px gutters. */
+  .v3 .co-investors-grid{gap:12px}
+
+  /* Contact: the desktop lead-in gap (220px+) was a dead screen on a phone. */
+  .v3 .footer-contact{padding-top:96px}
+
+  /* Hero title: "Relationships" is the longest word (~5.7em wide); scale the
+     title down on narrow phones so it never runs past the right edge. */
+  .v3 .hero .h1-bold,.v3 .hero .h1-light{font-size:min(60px, calc((100vw - 48px) / 5.7))}
+}

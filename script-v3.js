@@ -650,11 +650,11 @@ const ALL_NETWORK_LOGOS = [
   // (round-robin split, so that's floor(total/COLS)) — never more than that,
   // so no column can ever show the same logo twice at once, regardless of
   // how many logos NETWORK_LOGOS ends up with.
-  const MARQUEE_COLS = isRetinaBand ? 9 : (isUW ? 10 : 4);
+  const MARQUEE_COLS = isRetinaBand ? 9 : (isUW ? 10 : 3); // mobile: 3 tiles that fit the screen (v3.css)
   const minGroupSize = Math.max(1, Math.floor(NETWORK_LOGOS.length / MARQUEE_COLS));
   const desiredRows = isRetinaBand ? 3.6 : (isUW ? 4 : 6.5); // 6.5 ≈ 780/120 at the old mobile constant; retina's 3.6 (was 4) trims the max reveal ~10% without touching logo size
   const safeRows = Math.min(desiredRows, minGroupSize);
-  const HEIGHT_END = isRetinaBand || isUW ? logoH * safeRows + 12 * (safeRows - 1) : 780;
+  const HEIGHT_END = isRetinaBand || isUW ? logoH * safeRows + 12 * (safeRows - 1) : logoH * 4 + 12 * 3; // mobile: 4 rows
   const CURTAIN_END = 0.3; // fraction of eased spent just opening the curtain on that first row
   const COPY_DROP = 90; // starts this far above its natural spot; one constant rate down to 0
 
@@ -1390,7 +1390,8 @@ if (document.documentElement.classList.contains('pt-enter')) {
   const track = viewport && viewport.querySelector('.grid-track');
   const portfolioSection = document.querySelector('.portfolio');
   if (!track) return;
-  if (window.matchMedia('(min-width:901px)').matches) return;
+  // Desktop is a static grid; v3 mobile is a static 2-column grid too (v3.css).
+  if (window.matchMedia('(min-width:901px)').matches || document.body.classList.contains('v3')) return;
   const DRIFT = 38;       // px/sec idle drift
   const EASE_BACK = 1.6;  // how quickly momentum settles back to the drift
   const cards = track.querySelectorAll('.card');
