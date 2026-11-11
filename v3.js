@@ -33,9 +33,18 @@ if (!V3_DESKTOP) {
     return el.firstChild;
   });
   if (V3_REDUCE) { lines.forEach(l => l.classList.add('is-on')); return; }
-  window.addEventListener('hero-nodes-done', () => {
-    lines.forEach((l, i) => setTimeout(() => l.classList.add('is-on'), i * 130));
-  }, { once: true });
+  const play = () => lines.forEach((l, i) => setTimeout(() => l.classList.add('is-on'), i * 130));
+  if (V3_DESKTOP) { window.addEventListener('hero-nodes-done', play, { once: true }); return; }
+  // Mobile: waiting for the whole web felt slow; the text starts 0.8s after
+  // the loader is gone, while the nodes are still growing.
+  const start = () => setTimeout(play, 800);
+  if (!document.body.classList.contains('is-loading')) { start(); return; }
+  const mo = new MutationObserver(() => {
+    if (document.body.classList.contains('is-loading')) return;
+    mo.disconnect();
+    start();
+  });
+  mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 })();
 
 // Philosophy (v2's reveal, pinned): "Philosophy", the lead line, then the
@@ -45,6 +54,19 @@ if (!V3_DESKTOP) {
   const steps = section ? Array.from(section.querySelectorAll('.about-step')) : [];
   if (!steps.length) return;
   if (V3_REDUCE) { steps.forEach(s => s.classList.add('is-on')); return; }
+  // Mobile: no pin (v3.css). Releasing it meant a scroll correction that
+  // shows as a jump under touch momentum, and scroll-placed steps came in
+  // unevenly. The steps play on a timer, evenly, once the section is in.
+  if (!V3_DESKTOP) {
+    const check = () => {
+      if (section.getBoundingClientRect().top > window.innerHeight * 0.9) return;
+      window.removeEventListener('scroll', check);
+      steps.forEach((s, i) => setTimeout(() => s.classList.add('is-on'), i * 300));
+    };
+    window.addEventListener('scroll', check, { passive: true });
+    check();
+    return;
+  }
   const AT = [0, 0.3, 0.6]; // pin progress per step; the last third is the hold
   let ticking = false, done = false;
   // Pinned on the first pass only: once the section has fully scrolled out
@@ -88,6 +110,33 @@ if (!V3_DESKTOP) {
   const slots = Array.from(cards.querySelectorAll('.mid-lead-card-slot'));
   const PUSH = 320;
   if (V3_REDUCE) { slots.forEach(s => { s.style.opacity = '1'; }); return; }
+  // Mobile: same slide, but on a timer, each face on its own as it comes
+  // into view (they're stacked), not tied to the scroll.
+  if (!V3_DESKTOP) {
+    slots.forEach((s) => {
+      const dir = s.classList.contains('mid-lead-card-slot-left') ? -1 : 1;
+      s.style.opacity = '0';
+      s.style.filter = 'blur(18px)';
+      s.style.transform = `translateX(${dir * PUSH}px)`;
+    });
+    // Vertical position only: the start offset pushes each face sideways
+    // out of the (clipped) section, so an IntersectionObserver may never see it.
+    const pending = new Set(slots);
+    const check = () => {
+      pending.forEach((s) => {
+        if (s.getBoundingClientRect().top > window.innerHeight * 0.85) return;
+        pending.delete(s);
+        s.style.transition = 'opacity 1.3s var(--ease), filter 1.3s var(--ease), transform 1.5s var(--ease)'; // a bit slower
+        s.style.opacity = '1';
+        s.style.filter = 'none';
+        s.style.transform = 'none';
+      });
+      if (!pending.size) window.removeEventListener('scroll', check);
+    };
+    window.addEventListener('scroll', check, { passive: true });
+    check();
+    return;
+  }
   const ss = (x) => x * x * (3 - 2 * x);
   let ticking = false, pMax = 0; // one-way: scrolling up never undoes it
   const update = () => {
@@ -119,7 +168,85 @@ if (!V3_DESKTOP) {
   if (!btn || !marquee || V3_DESKTOP) return;
   btn.classList.add('network-view-all');
   marquee.append(btn);
+  // No hover on touch: every 5s it widens on its own (text left, arrow
+  // right, like the desktop hover) and the logos zoom in with it, then both
+  // settle back.
+  if (V3_REDUCE) return;
+  setInterval(() => {
+    // Each column scales around the screen center (vertical: the block's
+    // middle), so together they inflate as one block around the button.
+    const cx = window.innerWidth / 2 - marquee.getBoundingClientRect().left;
+    marquee.querySelectorAll('.marquee-col').forEach((col) => {
+      col.style.transformOrigin = `${cx - col.offsetLeft}px ${marquee.offsetHeight / 2 - col.offsetTop}px`;
+    });
+    marquee.classList.add('is-pushed');
+    setTimeout(() => marquee.classList.remove('is-pushed'), 1400);
+  }, 5000);
 })();
+
+// Mobile footer wordmark: a banner more than twice the screen wide that
+// scrolls right to left on a loop (two copies in a track, so it's seamless).
+// It's wider than the screen, so the shared "half of it visible" reveal
+// can't fire; the strip itself is watched instead.
+(() => {
+  const logo = document.querySelector('.footer-logo');
+  if (!logo || V3_DESKTOP) return;
+  const track = document.createElement('div');
+  track.className = 'footer-track';
+  logo.src = 'svg/netwrk-footer-logo-full.svg'; // uncropped glyphs (the desktop file trims the n and the baseline)
+  logo.replaceWith(track);
+  const copy = logo.cloneNode();
+  copy.removeAttribute('data-reveal');
+  copy.alt = '';
+  track.append(logo, copy);
+  const imgs = [logo, copy];
+  if (V3_REDUCE) { imgs.forEach(i => i.classList.add('is-revealed')); return; }
+  const io = new IntersectionObserver((en) => {
+    if (en[0].intersectionRatio < 0.5) return;
+    io.disconnect();
+    imgs.forEach(i => i.classList.add('is-revealed'));
+  }, { threshold: [0.5] });
+  io.observe(track.parentElement);
+})();
+
+// Mobile Portfolio and Co-Investors: the cards start stacked at the top of
+// their grid like a card file (each one peeking 18px below the one behind it,
+// the whole stack lifted up to 70px, clear of the title, so even the first
+// card falls), and drop into place in a cascade as soon as the grid is on
+// screen. Timed, not tied to the scroll.
+const v3Deck = (grid, cardSel, title) => {
+  if (!grid || V3_DESKTOP || V3_REDUCE) return;
+  const cards = Array.from(grid.querySelectorAll(cardSel));
+  const n = cards.length, STEP = 18;
+  const room = title ? grid.getBoundingClientRect().top - title.getBoundingClientRect().bottom - 8 : 70;
+  const LIFT = Math.max(0, Math.min(70, room));
+  const tops = cards.map(c => c.offsetTop);
+  cards.forEach((c, i) => {
+    c.classList.add('is-visible');
+    c.style.transition = 'none';
+    c.style.transform = `translateY(${tops[0] - LIFT + i * STEP - tops[i]}px) scale(${1 - (n - 1 - i) * 0.012})`;
+  });
+  // Front card first (the last one sits on top of the stack), then the ones
+  // behind it. The farther a card travels, the longer it takes, and each one
+  // eases in and out (accelerates, then settles) like a drop.
+  const deploy = () => {
+    cards.forEach((c, i) => {
+      const dur = 1400 + i * 110, delay = (n - 1 - i) * 160;
+      c.style.transition = `transform ${dur}ms cubic-bezier(.65,0,.25,1) ${delay}ms`;
+      c.style.transform = '';
+      setTimeout(() => { c.style.transition = ''; }, dur + delay);
+    });
+  };
+  const check = () => {
+    if (grid.getBoundingClientRect().top > window.innerHeight * 0.85) return;
+    window.removeEventListener('scroll', check);
+    deploy();
+  };
+  window.addEventListener('scroll', check, { passive: true });
+  check();
+};
+v3Deck(document.querySelector('.portfolio .grid-track'), '.card', document.querySelector('.portfolio .section-title'));
+v3Deck(document.querySelector('.co-investors-grid'), '.co-investor-card', document.querySelector('.co-investors-intro:not(.co-investors-outro)'));
 
 // Portfolio: the 12 cards (mobile: script-v3.js's own reveal).
 (() => {
@@ -366,3 +493,31 @@ window.addEventListener('load', () => {
     if (img.decode) img.decode().catch(() => {});
   });
 });
+
+// Mobile: section eyebrows (Philosophy, The Team, Our Network, Portfolio,
+// Co-Investors, General Inquiries) get an underline that draws in with the
+// scroll, full once the eyebrow reaches the middle of the screen. Runs after
+// the reveals above, which wrap their text in masks first.
+(() => {
+  if (V3_DESKTOP) return;
+  const els = document.querySelectorAll('main .eyebrow:not(.hero .eyebrow), .portfolio .section-title h2, .co-investors-intro-eyebrow, .footer-contact .eyebrow');
+  const lines = Array.from(els, (el, i) => {
+    const host = el.querySelector('.about-line > span') || el;
+    // Numbered "01." … in page order, underlined with the title.
+    host.innerHTML = `<span class="eyebrow-u"><span class="eyebrow-n">${String(i + 1).padStart(2, "0")}.</span>${host.innerHTML}</span>`;
+    return host.lastChild;
+  });
+  if (V3_REDUCE) { lines.forEach(l => l.style.setProperty('--u', '1')); return; }
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const vh = window.innerHeight;
+    lines.forEach((l) => {
+      const top = l.getBoundingClientRect().top;
+      const u = Math.min(Math.max((vh * 0.95 - top) / (vh * 0.45), 0), 1);
+      l.style.setProperty('--u', u.toFixed(3));
+    });
+  };
+  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
+})();

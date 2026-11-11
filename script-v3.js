@@ -669,12 +669,15 @@ const ALL_NETWORK_LOGOS = [
   let ticking = false;
   // v3: no pin. The curtain plays once on a timer as the section comes in,
   // and its final height is reserved (margin) so nothing below moves.
-  const NET_OPEN_MS = 1400;
+  // Mobile: starts as soon as the section is on screen and opens a bit faster,
+  // so the logos are in before you reach them.
+  const NET_MOBILE = window.matchMedia("(max-width:900px)").matches;
+  const NET_OPEN_MS = NET_MOBILE ? 1100 : 1400;
   let netStart = null, copyMax = 0;
   const tick = () => { update(); if (performance.now() - netStart < NET_OPEN_MS) requestAnimationFrame(tick); };
 
   const update = () => {
-    if (netStart === null && networkSection.getBoundingClientRect().top < window.innerHeight * 0.75) {
+    if (netStart === null && networkSection.getBoundingClientRect().top < window.innerHeight * (NET_MOBILE ? 0.95 : 0.75)) {
       netStart = performance.now();
       requestAnimationFrame(tick);
     }
@@ -700,7 +703,7 @@ const ALL_NETWORK_LOGOS = [
       const preRect = networkSection.getBoundingClientRect();
       const preProgress = Math.min(Math.max(1 - preRect.top / window.innerHeight, 0), 1);
       copyMax = Math.max(copyMax, preProgress); // one-way
-      const copyIn = smoothstep(Math.min(copyMax / 0.8, 1));
+      const copyIn = smoothstep(Math.min(copyMax / (NET_MOBILE ? 0.45 : 0.8), 1)); // mobile: done sooner
       copyEl.style.opacity = String(copyIn);
       const copyBlur = (1 - copyIn) * 14;
       copyEl.style.filter = copyBlur > 0.5 ? `blur(${copyBlur}px)` : 'none';
@@ -803,6 +806,29 @@ const ALL_NETWORK_LOGOS = [
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
 
+  // Mobile node spots: random, kept apart (min distance), weighted by where
+  // the hero copy is: below it = full, above it = some, beside the text only
+  // on the right edge, behind it only a few.
+  const mobileSpots = (n) => {
+    // Layout offsets (all relative to .hero), not rects: at this point the
+    // canvas still has the base CSS translateY(-50%) that step() later drops.
+    const ey = document.querySelector('.hero .eyebrow'), sub = document.querySelector('.hero-sub');
+    const t0 = ey ? ey.offsetTop - canvas.offsetTop : h * 0.35;
+    const t1 = sub ? sub.offsetTop + sub.offsetHeight - canvas.offsetTop + 20 : h * 0.75;
+    const weight = (x, y) => (y > t1 ? 1 : y < t0 ? 0.5 : x / w > 0.62 ? 0.45 : 0.14);
+    const out = [];
+    let minD = 70;
+    for (let tries = 0; out.length < n && tries < 6000; tries++) {
+      if (tries % 1500 === 1499) minD *= 0.8; // too tight: relax the spacing
+      const x = Math.random() * w, y = Math.random() * h;
+      if (Math.random() > weight(x, y)) continue;
+      if (out.some(p => Math.hypot(p.x - x, p.y - y) < minD)) continue;
+      out.push({ x, y });
+    }
+    while (out.length < n) out.push({ x: Math.random() * w, y: t1 + Math.random() * Math.max(h - t1, 1) });
+    return out;
+  };
+
   // Even, homogeneous spread: divide the box into a grid and jitter one
   // node inside each cell, instead of random placement (which tends to
   // clump into isolated blobs with big empty gaps).
@@ -818,11 +844,17 @@ const ALL_NETWORK_LOGOS = [
     const sizeBase = isUW ? 2.4 : 1.6;
     const sizeRange = isUW ? 2.6 : 1.8;
 
+    // Mobile: instead of the even grid, the nodes fill the empty space around
+    // the copy (dense below it, some above it and down the right side) and
+    // mostly stay out from behind the text.
+    const spots = HERO_MOBILE ? mobileSpots(cols * rows) : null;
+
     nodes = [];
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
-        const homeX = (i + 0.5) * cellW + (Math.random() - 0.5) * cellW * 0.7;
-        const homeY = (j + 0.5) * cellH + (Math.random() - 0.5) * cellH * 0.7;
+        const spot = spots && spots[j * cols + i];
+        const homeX = spot ? spot.x : (i + 0.5) * cellW + (Math.random() - 0.5) * cellW * 0.7;
+        const homeY = spot ? spot.y : (j + 0.5) * cellH + (Math.random() - 0.5) * cellH * 0.7;
         nodes.push({
           x: homeX,
           y: homeY,
@@ -995,7 +1027,7 @@ const ALL_NETWORK_LOGOS = [
       tilt.x += (tilt.tx - tilt.x) * 0.06;
       tilt.y += (tilt.ty - tilt.y) * 0.06;
     }
-    canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
+    canvas.style.transform = HERO_MOBILE ? 'none' : `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`; // mobile: no parallax
     // Hover (cursor node, links, pull) stays off until the entrance has
     // finished, so the two effects don't fight each other.
     const entranceDone = revealStart !== null &&
@@ -1052,7 +1084,7 @@ const ALL_NETWORK_LOGOS = [
     // glow), then the whole field sharpens as the web grows in.
     const revealBlur = revealStart === null ? REVEAL_BLUR
       : REVEAL_BLUR * (1 - smoothstep(Math.min(elapsed / REVEAL_BLUR_MS, 1)));
-    const blurPx = Math.max(heroFadeProgress * 16, revealBlur);
+    const blurPx = HERO_MOBILE ? revealBlur : Math.max(heroFadeProgress * 16, revealBlur); // mobile: fade only on scroll
     canvas.style.filter = blurPx > 0.1 ? `blur(${blurPx}px)` : 'none';
     ctx.clearRect(0, 0, w, h);
 
@@ -1172,7 +1204,14 @@ const ALL_NETWORK_LOGOS = [
   resize();
   makeNodes();
 
-  window.addEventListener('resize', () => { resize(); makeNodes(); });
+  // Mobile browsers fire resize when the address bar shows/hides while
+  // scrolling; rebuilding the web then made it jump. Only a width change counts.
+  let lastW = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (HERO_MOBILE && window.innerWidth === lastW) return;
+    lastW = window.innerWidth;
+    resize(); makeNodes();
+  });
   // Listens on window (not heroEl) so the hover reach covers the full
   // viewport width, including the UW margins outside .wrap — only the
   // vertical range stays gated to the hero section's own bounds.
@@ -1203,7 +1242,7 @@ const ALL_NETWORK_LOGOS = [
           // big stale->current jump over ~1s, reading as "nodes land in the
           // wrong spot, then drift back". Snap it instantly first.
           canvas.style.transition = 'none';
-          canvas.style.transform = `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`;
+          canvas.style.transform = HERO_MOBILE ? 'none' : `translateY(${window.scrollY * (1 - PARALLAX_SPEED)}px)`; // mobile: no parallax
           void canvas.offsetHeight;
           if (!settled) canvas.style.transition = '';
           raf = requestAnimationFrame(step);

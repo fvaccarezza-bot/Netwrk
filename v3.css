@@ -9,6 +9,7 @@
 
 /* ---------- Hero: bigger node graphic (button + 2nd line hidden) ---------- */
 .v3 .hero-nodes{max-width:92vw;max-height:100vh}
+.v3 .br-mobile{display:none} /* line breaks used only on mobile (shown in the mobile block) */
 @media (min-width:1920px){
   .v3 .hero-nodes{max-width:96vw}
 }
@@ -156,35 +157,58 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
 
   /* Our Network: 3 tiles that fit the screen (was 4 x 135px, cut off on
      the right); script-v3.js sizes the reveal to 4 rows of these. */
-  .v3 .network-pin{padding:88px 0 32px}
+  .v3 .network-pin{padding:88px 0 12px}
+  .v3 .network-marquee .marquee-col:nth-of-type(n+4){visibility:hidden} /* the 4th track sits off screen and peeked in when it breathes */
   .v3 .network-copy{width:100%;align-items:center;text-align:center}
-  .v3 .network-after{padding-top:32px}
+  .v3 .network-row{row-gap:20px} /* eyebrow closer to the logos (was 60px) */
+  .v3 .network-after{padding-top:0;margin-top:-12px} /* lead + copy 20px up, closer to the logos */
   .v3 .network-logo,.v3 .marquee-col{width:calc((100vw - 48px - 24px) / 3)}
   .v3 .network-logo{height:calc((100vw - 48px - 24px) / 3);padding:12px}
 
-  /* "View All" moved into the middle of the logos (v3.js): solid so it
-     reads over them, above the marquee's top/bottom blur fades. */
+  /* "View All" moved into the middle of the logos (v3.js): see-through dark
+     glass (65% + 8px blur) so it reads over them, above the marquee's
+     top/bottom blur fades. */
   .v3 .network-view-all{position:absolute;top:0;bottom:0;z-index:3;margin:auto 0;
     left:calc(50vw - 24px);translate:-50% 0; /* screen center: the marquee runs past the right edge */
-    width:fit-content;padding:0 22px;transform:none;
-    background:var(--bg);border-color:rgba(255,255,255,.7)}
+    width:200px;padding:0 22px;transform:none;
+    background:rgba(5,5,5,.65);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-color:rgba(255,255,255,.7)}
+  .v3 .network-view-all .line{transition:width .8s var(--ease)}
+  .v3 .network-view-all .head{margin-left:-7px} /* the line runs into the tip (-4px left a hairline gap) */
+  /* Every 5s (v3.js, .is-pushed on the marquee): the button widens from the
+     center, text left / arrow right, and the whole logo block (frames
+     included) inflates from its center with it. */
+  .v3 .is-pushed > .network-view-all{width:240px;gap:22px}
+  .v3 .is-pushed > .network-view-all .line{width:30px}
+  /* The block "inflates" by scaling each logo column around the screen
+     center (origin set per column in v3.js), not the marquee itself: the
+     button lives inside the marquee and must not be scaled with it. */
+  .v3 .network-marquee .marquee-col{transition:scale .8s var(--ease)}
+  .v3 .network-marquee.is-pushed .marquee-col{scale:1.03} /* small enough that the side cut barely shows */
+  .v3 .network-view-all{transition:width .8s var(--ease),gap .8s var(--ease)}
 
   /* Portfolio: all 12 in a static 2-column grid (was a one-card carousel). */
   .v3 .carousel{--gw:100%}
   .v3 .carousel::before,.v3 .carousel::after,.v3 .carousel-ind{display:none}
   .v3 .grid{overflow:visible}
-  .v3 .grid-track{display:grid;grid-template-columns:1fr;gap:12px;width:100%;padding:0;transform:none}
+  .v3 .grid-track{display:grid;grid-template-columns:1fr;gap:32px;width:100%;padding:0;transform:none}
   .v3 .grid .card{aspect-ratio:2/1} /* one per row, full width */
+  .v3 .grid .card .card-logo{height:47.25%} /* 30% smaller than the shared 67.5% */
   .v3 .grid .card{flex:none;width:auto}
-  .v3 .card .num{top:9px;left:10px}
-  .v3 .card .cat{bottom:9px;right:10px;font-size:9px;letter-spacing:1.5px}
+  .v3 .card .num{top:12px;left:14px;font-size:12px}
+  .v3 .card .cat{bottom:12px;right:14px;font-size:12px}
 
   /* Co-Investors: one per row, full width, 12px gutters. Logos drop the
      base fluid scale-up (1.9x at phone widths, which pushed wide wordmarks
      to the card edges) and size from the frame; per-logo tweaks above stay. */
-  .v3 .co-investors-grid{grid-template-columns:1fr;gap:12px}
-  .v3 .co-investor-card{aspect-ratio:2.4/1}
-  .v3 .co-investor-card .card-logo{transform:scale(1.6)} /* desktop's sizing (so the per-logo tweaks stay balanced), at a fixed scale */
+  .v3 .co-investors-grid{grid-template-columns:1fr;gap:32px}
+  .v3 .co-investor-card{aspect-ratio:2/1} /* same frame as Portfolio */
+  .v3 .co-investor-card .card-logo{transform:scale(.945)} /* desktop's sizing (so the per-logo tweaks stay balanced), at a fixed scale */
+  .v3 .co-investor-card .card-logo[src*="logo-lux"]{scale:.49}       /* 30% under its desktop .7 */
+  .v3 .co-investor-card .card-logo[src*="logo-founders"]{scale:1.32} /* 20% over the shared 1.1 */
+  .v3 .co-investor-card .card-logo[src*="logo-kholsa"]{scale:1.32}
+  .v3 .co-investor-card .card-logo[src*="logo-friends"]{scale:1.21}  /* +10% */
+  .v3 .co-investor-card .card-logo[src*="logo-fifh"]{scale:1.265}    /* +15% */
 
   /* No hover on touch: a tap left cards scaled / dimmed / glowing. */
   .v3 .card.is-visible:hover,
@@ -193,22 +217,34 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
   .v3 .co-investors-grid:has(.co-investor-card:hover) .co-investor-card:not(:hover){transform:none}
   .v3 .card::before,.v3 .co-investor-card::before{display:none}
 
-  /* Footer wordmark: full width like desktop. Its reveal needs half of it on
-     screen, but the 44px start offset left only ~40% inside .footer-mark
-     (overflow hidden) at phone size, so it never fired. */
-  .v3 .footer-logo{transform:translateY(16px)}
-  .v3 .footer-logo.is-revealed{transform:translateY(0)}
 
   /* Contact: the desktop lead-in gap (220px+) was a dead screen on a phone. */
   .v3 .footer-contact{padding-top:96px}
 
   /* Hero title: "Relationships" is the longest word (~5.7em wide); scale the
      title down on narrow phones so it never runs past the right edge. */
-  .v3 .hero .h1-bold,.v3 .hero .h1-light{font-size:min(60px, calc((100vw - 48px) / 5.7))}
+  .v3 .hero .h1-bold,.v3 .hero .h1-light{font-size:min(54px, calc((100vw - 48px) / 5.7))} /* 54 (was 60) */
+  .v3 .br-mobile{display:inline} /* "Capital is commoditized. / Distribution isn't." */
+  /* Hero: the eyebrow reads as a small grey label on one line, led by a
+     dash; the subline is a supporting line in the title's sans, light grey,
+     so neither competes with "Driving Growth" or with each other. */
+  .v3 .hero .eyebrow{font-size:12px;letter-spacing:.12em;color:#8a8a8a;white-space:nowrap}
+  .v3 .hero .eyebrow .br-mobile{display:none}
+  .v3 .hero .eyebrow .about-line > span::before{content:"\2014\00a0"}
+  .v3 .hero-sub{font-family:var(--sans);font-size:18px;font-weight:300;line-height:1.75;letter-spacing:-.01em;color:#bdbdbd} /* two lines, airy */
+  .v3 .hero-sub strong{font-weight:300}
 
-  /* Bold leads and team names: 30px (was the 38px floor of their clamp). */
-  .v3 .network-lead-after,.v3 .co-investors-intro-lead{font-size:30px}
-  .v3 .team-info{--tn:30px}
+  /* Bold leads and team names: 28px (was the 38px floor of their clamp). */
+  .v3 .network-lead-after,.v3 .co-investors-intro-lead{font-size:28px}
+  .v3 .network-subcopy,.v3 .co-investors-intro-copy{font-size:13px;color:#a6a6a6} /* body copy under them (was 12px, #cfcfcf); ~8:1 on the black */
+  .v3 .about-copy{font-size:13px} /* Philosophy text (was the 15px clamp floor); its eyebrow keeps 15px */
+  /* Philosophy: no pin on mobile (steps play on a timer, v3.js). */
+  .v3 .about{height:auto}
+  .v3 .about-pin{position:relative;height:auto;padding:96px 0}
+
+  /* No nodes web behind Portfolio / Co-Investors on mobile. */
+  .v3 .v2-weave-pin{display:none}
+  .v3 .team-info{--tn:28px}
 
   /* Hero nodes: the field starts at the left edge and runs ~30vw past the
      right one (clipped by the hero; no side fade; fewer nodes, no hover:
@@ -216,11 +252,39 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
   .v3 .hero{overflow-x:clip; /* full-bleed box, so the clip is the screen edge, not the gutter */
     margin-inline:calc(50% - 50vw);padding-inline:calc(50vw - 50%)}
   .v3 .hero-nodes{width:130vw;max-width:none;right:calc(50% - 80vw);
-    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 78%,transparent 100%);
-            mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 78%,transparent 100%)}
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 14%,#000 90%,transparent 100%);
+            mask-image:linear-gradient(to bottom,transparent 0%,#000 14%,#000 90%,transparent 100%)}
 
   /* Team: the faces slide in from 320px out to the sides (v3.js); keep that
      inside the section so the page never gets wider than the screen. */
   .v3 .mid-lead{overflow-x:clip}
-  .v3 .team-photo{width:208px;height:208px} /* was the 176px floor of the desktop clamp */
+  .v3 .team-photo{width:228px;height:228px} /* was the 176px floor of the desktop clamp */
+
+  /* Header: logo 10% bigger (23 -> 25px), "+ MENU" 15px. */
+  .v3 .logo-img{height:25px}
+  .v3 .burger{font-size:15px}
+
+  /* Footer wordmark: a banner 3x the screen wide, scrolling right to left
+     on a loop (v3.js puts it and a copy in .footer-track; -50% = one copy +
+     its gap, so the loop is seamless). Blur reveal kept, with a smaller
+     start offset that fits inside .footer-mark. */
+  .v3 .footer-track{display:flex;width:max-content;animation:v3-footer-banner 22s linear infinite}
+  /* Bottom bar: taller, Terms of Use out, copyright centered at 12px. */
+  .v3 .footer-bottom{position:relative;z-index:1;justify-content:center;padding:14px 24px;font-size:12px;background:var(--paper)}
+  .v3 .footer-mark{margin-bottom:-10px} /* letters tuck behind the bar: no dark seam above it */
+  .v3 .footer-bottom a{display:none}
+  .v3 .footer-track .footer-logo{flex:none;width:300vw;margin-right:30vw;aspect-ratio:1967/408;transform:translateY(16px)}
+  .v3 .footer-track .footer-logo.is-revealed{transform:translateY(0)}
+  @keyframes v3-footer-banner{to{transform:translateX(-50%)}}
+  @media (prefers-reduced-motion: reduce){
+    body.v3:not(.motion-on) .footer-track{animation:none}
+  }
+
+  /* Section eyebrows (Philosophy, The Team, Our Network, Portfolio,
+     Co-Investors, General Inquiries): 15px. The hero's has its own rule. */
+  .v3 .eyebrow,.v3 .portfolio .section-title h2,.v3 .co-investors-intro-eyebrow{font-size:15px}
+  /* Underline drawn with the scroll (v3.js sets --u 0..1). */
+  .v3 .eyebrow-n{margin-right:.6em} /* "01." … (v3.js) */
+  .v3 .eyebrow-u{padding-bottom:6px;
+    background:linear-gradient(currentColor,currentColor) left bottom / calc(var(--u, 0) * 100%) 1px no-repeat}
 }
