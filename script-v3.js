@@ -513,7 +513,8 @@ const ALL_NETWORK_LOGOS = [
   const isUW = window.matchMedia('(min-width:1920px)').matches;
   const COLS = isRetinaBand ? 9 : (isUW ? 10 : 4);
   const BASE_SPEEDS = [14, 18, 15, 20]; // px/sec, base pace
-  const IDLE_MULTIPLIER = 4; // fast while not hovering
+  // Mobile: no hover to slow it down, so it idles slower.
+  const IDLE_MULTIPLIER = window.matchMedia('(max-width:900px)').matches ? 1.5 : 4; // fast while not hovering
   const HOVER_MULTIPLIER = 1; // slows down to the base pace on hover
 
   // Split logos into COLS non-overlapping groups (round-robin) so the same
@@ -733,8 +734,11 @@ const ALL_NETWORK_LOGOS = [
   if (!canvas || !heroEl) return;
 
   const ctx = canvas.getContext('2d');
-  const NODE_COUNT = 64;
-  const LINK_DIST = 260;
+  // Mobile: a sparser web across the whole screen (v3.css)
+  // and no cursor interaction.
+  const HERO_MOBILE = window.matchMedia('(max-width:900px)').matches;
+  const NODE_COUNT = HERO_MOBILE ? 28 : 64;
+  const LINK_DIST = HERO_MOBILE ? 220 : 260;
   const CURSOR_LINK_DIST = 240;
   const CURSOR_PULL_DIST = 300;
   const PARALLAX_SPEED = 0.15; // background moves at 15% of scroll speed (more visible drift)
@@ -1177,7 +1181,7 @@ const ALL_NETWORK_LOGOS = [
   // instead of on every single mousemove, which was forcing a layout read
   // per pixel of mouse travel.
   let pendingClientX = null, pendingClientY = null;
-  window.addEventListener('mousemove', (e) => {
+  if (!HERO_MOBILE) window.addEventListener('mousemove', (e) => {
     pendingClientX = e.clientX;
     pendingClientY = e.clientY;
   });

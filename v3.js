@@ -111,6 +111,16 @@ if (!V3_DESKTOP) {
   update();
 })();
 
+// Mobile: "View All" sits in the middle of the network logos (it opens with
+// the curtain since it lives inside the marquee).
+(() => {
+  const btn = document.querySelector('.network-copy .btn');
+  const marquee = document.querySelector('.network-marquee');
+  if (!btn || !marquee || V3_DESKTOP) return;
+  btn.classList.add('network-view-all');
+  marquee.append(btn);
+})();
+
 // Portfolio: the 12 cards (mobile: script-v3.js's own reveal).
 (() => {
   const carousel = document.querySelector('.portfolio .carousel');

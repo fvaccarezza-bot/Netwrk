@@ -157,21 +157,47 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
   /* Our Network: 3 tiles that fit the screen (was 4 x 135px, cut off on
      the right); script-v3.js sizes the reveal to 4 rows of these. */
   .v3 .network-pin{padding:88px 0 32px}
+  .v3 .network-copy{width:100%;align-items:center;text-align:center}
   .v3 .network-after{padding-top:32px}
   .v3 .network-logo,.v3 .marquee-col{width:calc((100vw - 48px - 24px) / 3)}
   .v3 .network-logo{height:calc((100vw - 48px - 24px) / 3);padding:12px}
+
+  /* "View All" moved into the middle of the logos (v3.js): solid so it
+     reads over them, above the marquee's top/bottom blur fades. */
+  .v3 .network-view-all{position:absolute;top:0;bottom:0;z-index:3;margin:auto 0;
+    left:calc(50vw - 24px);translate:-50% 0; /* screen center: the marquee runs past the right edge */
+    width:fit-content;padding:0 22px;transform:none;
+    background:var(--bg);border-color:rgba(255,255,255,.7)}
 
   /* Portfolio: all 12 in a static 2-column grid (was a one-card carousel). */
   .v3 .carousel{--gw:100%}
   .v3 .carousel::before,.v3 .carousel::after,.v3 .carousel-ind{display:none}
   .v3 .grid{overflow:visible}
-  .v3 .grid-track{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;padding:0;transform:none}
+  .v3 .grid-track{display:grid;grid-template-columns:1fr;gap:12px;width:100%;padding:0;transform:none}
+  .v3 .grid .card{aspect-ratio:2/1} /* one per row, full width */
   .v3 .grid .card{flex:none;width:auto}
   .v3 .card .num{top:9px;left:10px}
   .v3 .card .cat{bottom:9px;right:10px;font-size:9px;letter-spacing:1.5px}
 
-  /* Co-Investors: matching 12px gutters. */
-  .v3 .co-investors-grid{gap:12px}
+  /* Co-Investors: one per row, full width, 12px gutters. Logos drop the
+     base fluid scale-up (1.9x at phone widths, which pushed wide wordmarks
+     to the card edges) and size from the frame; per-logo tweaks above stay. */
+  .v3 .co-investors-grid{grid-template-columns:1fr;gap:12px}
+  .v3 .co-investor-card{aspect-ratio:2.4/1}
+  .v3 .co-investor-card .card-logo{transform:scale(1.6)} /* desktop's sizing (so the per-logo tweaks stay balanced), at a fixed scale */
+
+  /* No hover on touch: a tap left cards scaled / dimmed / glowing. */
+  .v3 .card.is-visible:hover,
+  .v3 .grid:has(.card:hover) .card.is-visible:not(:hover),
+  .v3 .co-investor-card:hover,
+  .v3 .co-investors-grid:has(.co-investor-card:hover) .co-investor-card:not(:hover){transform:none}
+  .v3 .card::before,.v3 .co-investor-card::before{display:none}
+
+  /* Footer wordmark: full width like desktop. Its reveal needs half of it on
+     screen, but the 44px start offset left only ~40% inside .footer-mark
+     (overflow hidden) at phone size, so it never fired. */
+  .v3 .footer-logo{transform:translateY(16px)}
+  .v3 .footer-logo.is-revealed{transform:translateY(0)}
 
   /* Contact: the desktop lead-in gap (220px+) was a dead screen on a phone. */
   .v3 .footer-contact{padding-top:96px}
@@ -179,4 +205,22 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
   /* Hero title: "Relationships" is the longest word (~5.7em wide); scale the
      title down on narrow phones so it never runs past the right edge. */
   .v3 .hero .h1-bold,.v3 .hero .h1-light{font-size:min(60px, calc((100vw - 48px) / 5.7))}
+
+  /* Bold leads and team names: 30px (was the 38px floor of their clamp). */
+  .v3 .network-lead-after,.v3 .co-investors-intro-lead{font-size:30px}
+  .v3 .team-info{--tn:30px}
+
+  /* Hero nodes: the field starts at the left edge and runs ~30vw past the
+     right one (clipped by the hero; no side fade; fewer nodes, no hover:
+     script-v3.js). Fades only top and bottom. */
+  .v3 .hero{overflow-x:clip; /* full-bleed box, so the clip is the screen edge, not the gutter */
+    margin-inline:calc(50% - 50vw);padding-inline:calc(50vw - 50%)}
+  .v3 .hero-nodes{width:130vw;max-width:none;right:calc(50% - 80vw);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 78%,transparent 100%);
+            mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 78%,transparent 100%)}
+
+  /* Team: the faces slide in from 320px out to the sides (v3.js); keep that
+     inside the section so the page never gets wider than the screen. */
+  .v3 .mid-lead{overflow-x:clip}
+  .v3 .team-photo{width:208px;height:208px} /* was the 176px floor of the desktop clamp */
 }

@@ -727,6 +727,15 @@ body.hero-loaded .hero .btn{opacity:1;filter:blur(0);transform:translateY(0)}
   opacity:0;transform:translateY(65%);
   transition:opacity .35s var(--ease),transform .45s var(--ease)}
 .logo-tile:hover .logo-tile-label{opacity:1;transform:translateY(0)}
+/* Mobile (View All): 2 per row (auto-fill gave one giant tile per row),
+   and no hover lift/label on touch. */
+@media (max-width:900px){
+  .logo-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .logo-tile{padding:28px}
+  .logo-tile:hover{background:var(--bg-soft)}
+  .logo-tile:hover img{transform:scale(var(--tile-logo-scale,1))}
+  .logo-tile:hover .logo-tile-label{opacity:0;transform:translateY(65%)}
+}
 @media (prefers-reduced-motion:reduce){
   .logo-tile img,.logo-tile-label{transition:none}
   .logo-tile:hover img{transform:none}
