@@ -1,4 +1,4 @@
-// index-v3.html — section behaviour on top of script-v3.js.
+// index.html (v3) — section behaviour on top of script-v3.js.
 //
 // Model: no pins. Every section flows normally and reveals once when it
 // scrolls into view, on timers. The nodes web is a fixed backdrop behind
@@ -82,6 +82,10 @@ if (!V3_DESKTOP) {
     if (typeof lenis !== 'undefined' && lenis) {
       lenis.animatedScroll -= run;
       lenis.targetScroll -= run;
+      // A running glide (e.g. a menu link's scrollTo) keeps its own from/to;
+      // shift them too, or it lands `run` px past its target.
+      const a = lenis.animate;
+      if (a && a.isRunning) ['value', 'from', 'to'].forEach(k => { if (typeof a[k] === 'number') a[k] -= run; });
     }
   };
   const update = () => {

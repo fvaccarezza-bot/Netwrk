@@ -1,13 +1,19 @@
 /* ==========================================================================
-   index-v3.html — overrides on top of styles.css (body.v3).
-   Removed content is hidden with .v2-hidden, not deleted from the markup.
-   No pins: every section flows and reveals once on entering the viewport
-   (v3.js). The nodes web is a sticky backdrop behind Portfolio / Co-Investors.
+   index.html (v3) — overrides on top of styles.css (body.v3).
+   Sections flow and reveal once on entering the viewport (v3.js); the only
+   pin is Philosophy on desktop, first pass only. The nodes web is a sticky
+   backdrop behind Portfolio / Co-Investors (desktop).
    ========================================================================== */
 
-.v3 .v2-hidden{display:none !important}
+/* Section eyebrows are h2s (document outline); they keep the eyebrow look. */
+.v3 h2.eyebrow{font-weight:400}
 
-/* ---------- Hero: bigger node graphic (button + 2nd line hidden) ---------- */
+/* Keyboard focus (mouse clicks don't show it): the ring takes the element's own
+   text colour, so it is white on the dark page and dark on the light footer
+   bar, always contrasting with what is behind it. */
+.v3 :focus-visible{outline:2px solid currentColor;outline-offset:4px}
+
+/* ---------- Hero: bigger node graphic ---------- */
 .v3 .hero-nodes{max-width:92vw;max-height:100vh}
 .v3 .br-mobile{display:none} /* line breaks used only on mobile (shown in the mobile block) */
 @media (min-width:1920px){
@@ -43,7 +49,7 @@
 /* ---------- Team: "The Team" + two framed faces sliding in from opposite
    sides (v2's entrance, without the rings / statements) ---------- */
 .v3 .mid-lead{height:auto;margin-top:0}
-.v3 .mid-lead-pulse{display:none}
+
 /* One screen: title and both cards share the frame. */
 .v3 .mid-lead-pin{position:relative;height:auto;overflow:visible;
   min-height:100vh;min-height:100svh;
@@ -98,7 +104,6 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
 .v3 .v2-weave-pin{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
   width:100vw;margin-left:calc(50% - 50vw);margin-bottom:-100vh;margin-bottom:-100dvh}
 .v3 .v2-weave-canvas{display:block;width:100%;height:100%}
-.v3 .v2-weave-runway{display:none}
 .v3 .v2-weave > section{position:relative;z-index:1}
 
 /* ---------- Portfolio: 4 x 3, all 12 in one viewport (desktop) ---------- */
@@ -145,6 +150,12 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
 .v3 .footer-contact .eyebrow{margin:0 0 clamp(20px, 4px + 1.25vw, 28px)}
 /* The mail reuses the "View Profile" link (type, roll-up hover, arrow). */
 .v3 .footer-contact .footer-contact-mail{margin-top:0;font-size:clamp(14px, 6px + 0.63vw, 16px)}
+
+/* Body copy: the hard line breaks are set for wide screens; below 1280px
+   they left orphaned fragments ("distribution," alone), so the text flows. */
+@media (max-width:1279.98px){
+  .v3 .network-subcopy br,.v3 .network-subcopy-inline br,.v3 .co-investors-intro-copy br{display:none}
+}
 
 /* ==========================================================================
    Mobile (≤900px) — nothing here reaches retina / Normal / UW.
@@ -273,7 +284,8 @@ body.v3.motion-on .mid-lead-card-slot{opacity:0;will-change:opacity,filter,trans
   .v3 .footer-bottom{position:relative;z-index:1;justify-content:center;padding:14px 24px;font-size:12px;background:var(--paper)}
   .v3 .footer-mark{margin-bottom:-10px} /* letters tuck behind the bar: no dark seam above it */
   .v3 .footer-bottom a{display:none}
-  .v3 .footer-track .footer-logo{flex:none;width:300vw;margin-right:30vw;aspect-ratio:1967/408;transform:translateY(16px)}
+  /* Capped: 3x the screen width was huge on tablets. */
+  .v3 .footer-track .footer-logo{flex:none;width:min(300vw, 1500px);margin-right:min(30vw, 150px);aspect-ratio:1967/408;transform:translateY(16px)}
   .v3 .footer-track .footer-logo.is-revealed{transform:translateY(0)}
   @keyframes v3-footer-banner{to{transform:translateX(-50%)}}
   @media (prefers-reduced-motion: reduce){

@@ -106,7 +106,15 @@ if (!reduceMotion) {
 
     // Exit sequence: counter lands on 100 -> loader fades out while the
     // canvas slides home -> hero reveal fires once the page is uncovered.
+    // Failed images already count as done (their 'error' advances the
+    // counter, and window 'load' still fires). A request that hangs would
+    // hold 'load' forever, so MAX_LOADER_MS releases it regardless, with
+    // the same exit sequence. Runs once, whichever comes first.
+    const MAX_LOADER_MS = Math.max(8000, MIN_LOADER_MS);
+    let released = false;
     const release = () => {
+      if (released) return;
+      released = true;
       const wait = Math.max(0, MIN_LOADER_MS - (performance.now() - loadStart));
       setTimeout(() => {
         onLoaderFull = () => {
@@ -122,6 +130,7 @@ if (!reduceMotion) {
     };
     if (document.readyState === 'complete') release();
     else window.addEventListener('load', release);
+    setTimeout(release, MAX_LOADER_MS);
   }
 }
 // Ease-in-out for 0-1 progress ramps, so reveals/holds settle in and out
@@ -234,9 +243,34 @@ const menu = document.querySelector('[data-menu]');
 
 const burgerLabel = toggle.querySelector('.burger-label');
 
+// Closed, the panel is only hidden visually: `inert` keeps its links out of
+// the tab order and away from screen readers. Opening moves focus into it;
+// closing hands focus back to the toggle (if it was inside the menu).
+// Open, it covers the whole screen: the page behind goes inert (no focus,
+// no clicks) and Tab cycles through the header (logo, toggle) and its links.
+menu.inert = true;
+const menuBehind = document.querySelectorAll('main, footer');
+const menuCycle = () => [...document.querySelectorAll('.header a, .header button'), ...menu.querySelectorAll('a')];
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || !body.classList.contains('menu-open')) return;
+  const items = menuCycle();
+  const i = items.indexOf(document.activeElement);
+  const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : (i === items.length - 1 ? 0 : i + 1);
+  e.preventDefault();
+  items[next].focus();
+});
 function setMenu(open) {
+  if (open === body.classList.contains('menu-open')) return;
   body.classList.toggle('menu-open', open);
   toggle.setAttribute('aria-expanded', String(open));
+  menu.inert = !open;
+  menuBehind.forEach(el => { el.inert = open; });
+  if (open) {
+    const first = menu.querySelector('a');
+    if (first) first.focus({ preventScroll: true });
+  } else if (menu.contains(document.activeElement)) {
+    toggle.focus({ preventScroll: true });
+  }
 
   if (burgerLabel) {
     // Fade + small rise instead of an instant text swap.
@@ -361,149 +395,6 @@ const NETWORK_LOGOS = [
   { src: 'images/our-network-logos/home/reebok.png', alt: 'Reebok' },
   { src: 'images/our-network-logos/home/ufc.png', alt: 'UFC' },
 ];
-
-// All-logos page: full network roster, one 200px tile per logo.
-// Superset of NETWORK_LOGOS (the curated homepage marquee) plus every
-// additional sourced logo — used only by network-partners.html.
-// Alphabetical by company name — this array drives the "View All" grid.
-const ALL_NETWORK_LOGOS = [
-  { src: 'images/our-network-logos/view-all/abbvie-white.png', alt: 'AbbVie' },
-  { src: 'images/our-network-logos/view-all/adidas-white.png', alt: 'Adidas' },
-  { src: 'images/our-network-logos/view-all/adobe-white.png', alt: 'Adobe' },
-  { src: 'images/our-network-logos/view-all/alo-yoga.png', alt: 'Alo Yoga' },
-  { src: 'images/our-network-logos/view-all/amex-white.png', alt: 'American Express' },
-  { src: 'images/our-network-logos/view-all/anduril.png', alt: 'Anduril' },
-  { src: 'images/our-network-logos/view-all/arizona-white.png', alt: 'Arizona' },
-  { src: 'images/our-network-logos/view-all/barstool.png', alt: 'Barstool Sports' },
-  { src: 'images/our-network-logos/view-all/bausch-white.png', alt: 'Bausch + Lomb' },
-  { src: 'images/our-network-logos/view-all/bergdorf.png', alt: 'Bergdorf Goodman' },
-  { src: 'images/our-network-logos/view-all/beta-tech.png', alt: 'BETA Technologies' },
-  { src: 'images/our-network-logos/view-all/betr.png', alt: 'Betr' },
-  { src: 'images/our-network-logos/view-all/billabong.png', alt: 'Billabong' },
-  { src: 'images/our-network-logos/view-all/brooks-brothers.png', alt: 'Brooks Brothers' },
-  { src: 'images/our-network-logos/view-all/burger-king-white.png', alt: 'Burger King' },
-  { src: 'images/our-network-logos/view-all/caa-white.png', alt: 'CAA' },
-  { src: 'images/our-network-logos/view-all/caesars-white.png', alt: 'Caesars' },
-  { src: 'images/our-network-logos/view-all/celsius-white.png', alt: 'Celsius' },
-  { src: 'images/our-network-logos/view-all/champion-white.png', alt: 'Champion' },
-  { src: 'images/our-network-logos/view-all/coca-cola-white.png', alt: 'Coca-Cola' },
-  { src: 'images/our-network-logos/view-all/cox-white.png', alt: 'Cox Enterprises' },
-  { src: 'images/our-network-logos/view-all/dc-shoes.png', alt: 'DC Shoes' },
-  { src: 'images/our-network-logos/view-all/delta-white.png', alt: 'Delta Air Lines' },
-  { src: 'images/our-network-logos/view-all/dicks.png', alt: "DICK'S Sporting Goods" },
-  { src: 'images/our-network-logos/view-all/discovery.png', alt: 'Discovery Land Company' },
-  { src: 'images/our-network-logos/view-all/disney-white.png', alt: 'Disney' },
-  { src: 'images/our-network-logos/view-all/douglas-white.png', alt: 'Douglas Elliman' },
-  { src: 'images/our-network-logos/view-all/e11even.png', alt: 'E11EVEN' },
-  { src: 'images/our-network-logos/view-all/eddie-bauer.png', alt: 'Eddie Bauer' },
-  { src: 'images/our-network-logos/view-all/erebor.png', alt: 'Erebor' },
-  { src: 'images/our-network-logos/view-all/erewhon.png', alt: 'Erewhon' },
-  { src: 'images/our-network-logos/view-all/fanatics-white.png', alt: 'Fanatics' },
-  { src: 'images/our-network-logos/view-all/fishwife.png', alt: 'Fishwife' },
-  { src: 'images/our-network-logos/view-all/fisker.png', alt: 'Fisker' },
-  { src: 'images/our-network-logos/view-all/ford-white.png', alt: 'Ford' },
-  { src: 'images/our-network-logos/view-all/formula1-white.png', alt: 'Formula 1' },
-  { src: 'images/our-network-logos/view-all/fruitist.png', alt: 'Fruitist' },
-  { src: 'images/our-network-logos/view-all/gecko.png', alt: 'Gecko Robotics' },
-  { src: 'images/our-network-logos/view-all/goldenhipo.png', alt: 'Golden Hippo' },
-  { src: 'images/our-network-logos/view-all/green.png', alt: 'Green Mountain Coffee Roasters' },
-  { src: 'images/our-network-logos/view-all/groot-white.png', alt: 'Groot Hospitality' },
-  { src: 'images/our-network-logos/view-all/guess.png', alt: 'GUESS' },
-  { src: 'images/our-network-logos/view-all/gusto-white.png', alt: 'Gusto' },
-  { src: 'images/our-network-logos/view-all/hard-rock-white.png', alt: 'Hard Rock International' },
-  { src: 'images/our-network-logos/view-all/houlihan-white.png', alt: 'Houlihan Lokey' },
-  { src: 'images/our-network-logos/view-all/hulu-white.png', alt: 'Hulu' },
-  { src: 'images/our-network-logos/view-all/intuit-white.png', alt: 'Intuit' },
-  { src: 'images/our-network-logos/view-all/jersey-mikes.png', alt: "Jersey Mike's" },
-  { src: 'images/our-network-logos/view-all/kay.png', alt: "Kay Jewelers" },
-  { src: 'images/our-network-logos/view-all/keurig-white.png', alt: 'Keurig' },
-  { src: 'images/our-network-logos/view-all/kith.png', alt: 'KITH' },
-  { src: 'images/our-network-logos/view-all/lexus.png', alt: 'Lexus' },
-  { src: 'images/our-network-logos/view-all/lightning.png', alt: 'Lightning Labs' },
-  { src: 'images/our-network-logos/view-all/liv.png', alt: 'LIV Golf' },
-  { src: 'images/our-network-logos/view-all/live-nation-white.png', alt: 'Live Nation' },
-  { src: 'images/our-network-logos/view-all/lowes.png', alt: "Lowe's" },
-  { src: 'images/our-network-logos/view-all/lucky-brand.png', alt: 'Lucky Brand' },
-  { src: 'images/our-network-logos/view-all/lucky-strike.png', alt: 'Lucky Strike Entertainment' },
-  { src: 'images/our-network-logos/view-all/mars-white.png', alt: 'Mars Inc.' },
-  { src: 'images/our-network-logos/view-all/mikes-hot-honey.png', alt: "Mike's Hot Honey" },
-  { src: 'images/our-network-logos/view-all/mlb-white.png', alt: 'MLB' },
-  { src: 'images/our-network-logos/view-all/moonpay-white.png', alt: 'MoonPay' },
-  { src: 'images/our-network-logos/view-all/nautica.png', alt: 'Nautica' },
-  { src: 'images/our-network-logos/view-all/nba-white.png', alt: 'NBA' },
-  { src: 'images/our-network-logos/view-all/neiman-marcus.png', alt: 'Neiman Marcus' },
-  { src: 'images/our-network-logos/view-all/netflix-white.png', alt: 'Netflix' },
-  { src: 'images/our-network-logos/view-all/neuralink.png', alt: 'Neuralink' },
-  { src: 'images/our-network-logos/view-all/nfl-white.png', alt: 'NFL' },
-  { src: 'images/our-network-logos/view-all/nhl.png', alt: 'NHL' },
-  { src: 'images/our-network-logos/view-all/nike-white.png', alt: 'Nike' },
-  { src: 'images/our-network-logos/view-all/nine-west.png', alt: 'Nine West' },
-  { src: 'images/our-network-logos/view-all/nksfb.png', alt: 'NKSFB' },
-  { src: 'images/our-network-logos/view-all/omnicom.png', alt: 'Omnicom' },
-  { src: 'images/our-network-logos/view-all/openai.png', alt: 'OpenAI' },
-  { src: 'images/our-network-logos/view-all/palantir.png', alt: 'Palantir' },
-  { src: 'images/our-network-logos/view-all/ptc.png', alt: 'Palm Tree Crew' },
-  { src: 'images/our-network-logos/view-all/peregrine.png', alt: 'Peregrine Technologies' },
-  { src: 'images/our-network-logos/view-all/planet-fitness.png', alt: 'Planet Fitness' },
-  { src: 'images/our-network-logos/view-all/pnc-white.png', alt: 'PNC' },
-  { src: 'images/our-network-logos/view-all/prime-white.png', alt: 'PRIME' },
-  { src: 'images/our-network-logos/view-all/prizepicks.png', alt: 'PrizePicks' },
-  { src: 'images/our-network-logos/view-all/quiksilver.png', alt: 'Quiksilver' },
-  { src: 'images/our-network-logos/view-all/reddit-white.png', alt: 'Reddit' },
-  { src: 'images/our-network-logos/view-all/reebok-white.png', alt: 'Reebok' },
-  { src: 'images/our-network-logos/view-all/ripple-white.png', alt: 'Ripple' },
-  { src: 'images/our-network-logos/view-all/rolling-white.png', alt: 'Rolling Loud' },
-  { src: 'images/our-network-logos/view-all/rvca.png', alt: 'RVCA' },
-  { src: 'images/our-network-logos/view-all/saks.png', alt: 'Saks Global' },
-  { src: 'images/our-network-logos/view-all/salesforce-white.png', alt: 'Salesforce' },
-  { src: 'images/our-network-logos/view-all/science.png', alt: 'Science Corp.' },
-  { src: 'images/our-network-logos/view-all/skechers-white.png', alt: 'Skechers' },
-  { src: 'images/our-network-logos/view-all/sothebys.png', alt: "Sotheby's" },
-  { src: 'images/our-network-logos/view-all/spacex-white.png', alt: 'SpaceX' },
-  { src: 'images/our-network-logos/view-all/spotify-white.png', alt: 'Spotify' },
-  { src: 'images/our-network-logos/view-all/superpower.png', alt: 'Superpower' },
-  { src: 'images/our-network-logos/view-all/tesla-white.png', alt: 'Tesla' },
-  { src: 'images/our-network-logos/view-all/hwood-white.png', alt: 'The h.wood Group' },
-  { src: 'images/our-network-logos/view-all/toyota-white.png', alt: 'Toyota' },
-  { src: 'images/our-network-logos/view-all/ufc-white.png', alt: 'UFC' },
-  { src: 'images/our-network-logos/view-all/umg.png', alt: 'Universal Music Group' },
-  { src: 'images/our-network-logos/view-all/uta-white.png', alt: 'United Talent Agency' },
-  { src: 'images/our-network-logos/view-all/verkada-white.png', alt: 'Verkada' },
-  { src: 'images/our-network-logos/view-all/vince.png', alt: 'Vince' },
-  { src: 'images/our-network-logos/view-all/vincecamuto.png', alt: 'Vince Camuto' },
-  { src: 'images/our-network-logos/view-all/volcom.png', alt: 'Volcom' },
-  { src: 'images/our-network-logos/view-all/walmart-white.png', alt: 'Walmart' },
-  { src: 'images/our-network-logos/view-all/wme.png', alt: 'WME' },
-];
-
-// All-logos page: one 200px tile per network logo.
-(() => {
-  const gridEl = document.querySelector('[data-logo-grid]');
-  if (!gridEl) return;
-  ALL_NETWORK_LOGOS.forEach((logo, i) => {
-    const tile = document.createElement('div');
-    tile.className = 'logo-tile';
-    if (logo.src) {
-      const img = document.createElement('img');
-      img.src = logo.src;
-      img.alt = logo.alt;
-      img.loading = 'lazy';
-      tile.appendChild(img);
-      const label = document.createElement('span');
-      label.className = 'logo-tile-label';
-      label.textContent = logo.alt;
-      tile.appendChild(label);
-    } else {
-      tile.classList.add('logo-tile-text');
-      const span = document.createElement('span');
-      span.textContent = logo.alt;
-      tile.appendChild(span);
-    }
-    gridEl.appendChild(tile);
-    tile.style.setProperty('--d', (0.45 + Math.min(i, 40) * 0.045) + 's');
-    requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('is-in')));
-  });
-})();
 
 (() => {
   const marqueeEl = document.querySelector('[data-network-marquee]');

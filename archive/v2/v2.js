@@ -315,7 +315,7 @@ const WEAVE_MODE = 'web';
   // Sample target points from the isotype: rasterize it, then pick edge and
   // interior pixels with a minimum spacing so the nodes spread evenly.
   const img = new Image();
-  img.src = 'svg/iso-logo.svg';
+  img.src = '../../svg/iso-logo.svg';
   const sample = () => {
     const S = 240;
     const off = document.createElement('canvas');

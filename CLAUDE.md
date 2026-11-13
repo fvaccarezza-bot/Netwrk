@@ -70,7 +70,7 @@ This is a highly custom visual website. Not every visual difference is a bug req
 
 ## 10. Known architecture (don't rediscover this)
 
-- Static site, no build step: `index.html`, `network-partners.html`, `terms.html` share `styles.css` and `script.js`.
+- Static site, no build step. `index.html` is the final v3 page: `styles.css` + `v3.css`, `script-v3.js` + `v3.js` (body class `v2 v3`). `network-partners.html` and `terms.html` use `styles.css` + `script.js`. Older versions live in `archive/` (v1, v2) with their own copies; don't edit them.
 - No GSAP/ScrollTrigger. Scroll-driven effects (about-pin, stats-pin, network-pin, hero canvas parallax) are hand-rolled vanilla JS in `script.js`, driven by `getBoundingClientRect()`/`scrollY` progress calculations inside `requestAnimationFrame` loops. Respect `reduceMotion` branches — most animated sections have a `prefers-reduced-motion` fallback that must stay in sync with the animated version.
 - Lenis (`lenis@1`, CDN) provides smooth scroll; skipped when `reduceMotion` is true.
 - Custom cursor (`.cursor-dot`/`.cursor-ring`) is appended directly to `<body>` and positioned via raw `clientX`/`clientY` — it must NEVER sit inside a zoomed, transformed, or scaled ancestor, or it desyncs from the real mouse position. **Never use `zoom` as a responsive-scaling shortcut** — it was tried and reverted because it broke this.
